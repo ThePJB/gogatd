@@ -17,6 +17,9 @@ const (
 	GRIDH    = 15
 )
 
+const DEG_TO_RAD = 180 / math.Pi
+const RAD_TO_DEG = math.Pi / 180
+
 type Context struct {
 	window   *sdl.Window
 	renderer *sdl.Renderer
@@ -32,34 +35,18 @@ type Context struct {
 	enemies []Enemy
 
 	lives int32
+
+	beams []Beam
 }
 
 type Cell struct {
-	cellType  CellType
-	towerType TowerType
-	pathDir   [2]int32
+	cellType CellType
+	tower    Tower
+	pathDir  [2]int32
+
 	// to come stuff about state like attack cooldown,
 	// ability cooldown etc
 }
-
-type Enemy struct {
-	enemyType EnemyType
-	position  vec2f
-	velocity  vec2f
-
-	w, h      int32
-	animstage float64
-	animmax   float64
-	speedBase float64 // pixels per second
-
-	alive bool
-}
-
-type EnemyType int32
-
-const (
-	Slime EnemyType = 0
-)
 
 func (e Enemy) rect() *sdl.Rect {
 	return &sdl.Rect{int32(e.position[0]) - e.w/2, int32(e.position[1]) - e.h/2, e.w, e.h}
@@ -75,15 +62,6 @@ const (
 	Orb        CellType = 4
 	Wall       CellType = 5
 	WallTop    CellType = 6
-)
-
-type TowerType int32
-
-const (
-	None TowerType = 0
-
-	Skull TowerType = 3
-	Fire  TowerType = 4
 )
 
 var context Context = Context{}
@@ -119,10 +97,12 @@ func main() {
 	}
 	context.renderer = renderer
 	context.atlas = loadAssets()
+	initTowerProps()
 
 	context.grid, context.spawnidx, context.goalidx = makeGrid()
 
-	spawnEnemy()
+	tspawn := 1.0
+	tsinceSpawn := 0.0
 
 	running := true
 	tStart := time.Now().UnixNano()
@@ -134,6 +114,12 @@ func main() {
 		tCurrentStart = float64(tStart) / 1000000000
 
 		dt := tCurrentStart - tLastStart
+
+		tsinceSpawn += dt
+		if tsinceSpawn >= tspawn {
+			tsinceSpawn = 0
+			spawnEnemy()
+		}
 
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
@@ -151,9 +137,7 @@ func main() {
 						fmt.Println("you clicked", gx, gy)
 						clickedCellIdx := gy*context.gridw + gx
 
-						fmt.Println("tower:", context.grid[clickedCellIdx].towerType)
-						context.grid[clickedCellIdx].towerType = Skull
-						fmt.Println("tower:", context.grid[clickedCellIdx].towerType)
+						context.grid[clickedCellIdx].tower = makeTower(Skull)
 					} else {
 						// UI LMB event
 						fmt.Println("ui clicc")
@@ -187,6 +171,36 @@ func main() {
 			}
 		}
 
+		for i := range context.grid {
+			if context.grid[i].tower.towerType != None {
+				props := towerProperties[context.grid[i].tower.towerType]
+				context.grid[i].tower.cooldown -= dt
+				if context.grid[i].tower.cooldown <= 0 {
+					// we can attack: look for targets
+					// at the oment just pick 1st enemy
+					for j := range context.enemies {
+						if !context.enemies[j].alive {
+							continue
+						}
+						if dist(context.enemies[j].position, getTileCenter(int32(i))) < props.attackRange {
+							// found an enemy
+							// probably factor into a damage function eventually that accounts for attack,res and handles death etc
+							context.enemies[j].hp -= props.damage
+							if context.enemies[j].hp <= 0 {
+								context.enemies[j].alive = false
+							}
+							if props.attackType == ATTACK_BEAM {
+								makeBeam(props.attackTexture, getTileCenter(int32(i)), context.enemies[j].position, 0.4)
+							}
+							context.grid[i].tower.cooldown = props.cooldown
+							// you would play a sound or something too
+							break // could have multishot
+						}
+					}
+				}
+			}
+		}
+
 		// render loop
 		context.renderer.Clear()
 		context.renderer.SetDrawColor(0, 0, 0, 255)
@@ -209,14 +223,8 @@ func main() {
 				context.renderer.CopyEx(context.atlas.orb, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
 			case Buildable:
 				context.renderer.CopyEx(context.atlas.buildable, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
-				switch cell.towerType {
-				case None:
-					break
-				case Skull:
-					context.renderer.CopyEx(context.atlas.skull, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
-				case Fire:
-					context.renderer.CopyEx(context.atlas.fire, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
-				}
+				drawTower(cell.tower, toRect)
+
 			case Wall:
 				context.renderer.CopyEx(context.atlas.wall, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
 			case WallTop:
@@ -224,13 +232,12 @@ func main() {
 			}
 		}
 		// draw enemies
-		for _, enemy := range context.enemies {
-			if enemy.alive {
-				if enemy.animstage > enemy.animmax/2 {
-					context.renderer.CopyEx(context.atlas.dude, nil, enemy.rect(), 0.0, nil, sdl.FLIP_HORIZONTAL)
-				} else {
-					context.renderer.CopyEx(context.atlas.dude, nil, enemy.rect(), 0.0, nil, sdl.FLIP_NONE)
-				}
+		drawEnemies()
+
+		for i := range context.beams {
+			if context.beams[i].timeRemaining > 0 {
+				context.beams[i].update(dt)
+				context.beams[i].draw()
 			}
 		}
 
@@ -245,24 +252,6 @@ func main() {
 			time.Sleep(time.Nanosecond * time.Duration(c))
 		}
 	}
-}
-
-func spawnEnemy() {
-	speed := float64(150.0)
-
-	newEnemy := Enemy{
-		enemyType: Slime,
-		w:         80,
-		h:         80,
-		animstage: 0,
-		animmax:   0.8,
-		speedBase: speed,
-		position:  getTileCenter(context.spawnidx),
-		velocity:  vecMulScalar(asF64(context.grid[context.spawnidx].pathDir), speed),
-		alive:     true,
-	}
-
-	context.enemies = append(context.enemies, newEnemy)
 }
 
 func getTileCenter(idx int32) vec2f {
@@ -307,6 +296,11 @@ func asI32(a vec2f) vec2i {
 }
 func dist(a, b vec2f) float64 {
 	return math.Sqrt((a[0]-b[0])*(a[0]-b[0]) + (a[1]-b[1])*(a[1]-b[1]))
+}
+
+// in radians
+func angle(a, b vec2f) float64 {
+	return math.Atan2(b[1]-a[1], b[0]-a[0])
 }
 
 func panics(a ...interface{}) {

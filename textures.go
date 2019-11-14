@@ -21,6 +21,12 @@ type Atlas struct {
 
 	font *sdl.Texture
 	cash *sdl.Texture
+
+	barend   *sdl.Texture
+	bargreen *sdl.Texture
+	barred   *sdl.Texture
+
+	whitebeam *sdl.Texture
 }
 
 func loadAssets() Atlas {
@@ -35,6 +41,11 @@ func loadAssets() Atlas {
 	atlas.orb = loadTexture("assets/magicOrb.png")
 	atlas.portal = loadTexture("assets/portal.png")
 	atlas.font = loadTexture("assets/custombold.png")
+	atlas.barend = loadTexture("assets/hpend.png")
+	atlas.bargreen = loadTexture("assets/hpgreen.png")
+	atlas.barred = loadTexture("assets/hpred.png")
+	atlas.whitebeam = loadTexture("assets/whitebeam.png")
+
 	return atlas
 }
 
