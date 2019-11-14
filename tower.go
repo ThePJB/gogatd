@@ -5,10 +5,12 @@ import "github.com/veandco/go-sdl2/sdl"
 type TowerType int32
 
 const (
-	None TowerType = 0
-
-	Skull TowerType = 1
-	Fire  TowerType = 2
+	None TowerType = iota
+	Skull
+	Laser
+	Fire
+	Lightning
+	NUM_TOWERS
 )
 
 type TowerProperties struct {
@@ -35,6 +37,33 @@ func initTowerProps() {
 			context.atlas.whitebeam,
 			4,
 		},
+		TowerProperties{
+			"Laser Tower",
+			0.25,
+			context.atlas.laserTower,
+			ATTACK_BEAM,
+			200,
+			context.atlas.laserBeam,
+			1,
+		},
+		TowerProperties{
+			"Fire Tower",
+			2.0,
+			context.atlas.fireTower,
+			ATTACK_PROJECTILE,
+			200,
+			context.atlas.fireProjectile,
+			12,
+		},
+		TowerProperties{
+			"Lightning Tower",
+			3,
+			context.atlas.lightningTower,
+			ATTACK_BEAM,
+			350,
+			context.atlas.lightningBeam,
+			10,
+		},
 		TowerProperties{},
 	}
 }
@@ -42,7 +71,8 @@ func initTowerProps() {
 type AttackType int32
 
 const (
-	ATTACK_BEAM AttackType = 0
+	ATTACK_BEAM AttackType = iota
+	ATTACK_PROJECTILE
 )
 
 type Tower struct {
@@ -58,12 +88,5 @@ func makeTower(tt TowerType) Tower {
 }
 
 func drawTower(t Tower, toRect *sdl.Rect) {
-	switch t.towerType {
-	case None:
-		break
-	case Skull:
-		context.renderer.CopyEx(context.atlas.skull, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
-	case Fire:
-		context.renderer.CopyEx(context.atlas.fire, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
-	}
+	context.renderer.CopyEx(towerProperties[t.towerType].texture, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
 }

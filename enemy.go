@@ -43,6 +43,10 @@ func spawnEnemy() {
 	context.enemies = append(context.enemies, newEnemy)
 }
 
+func (e Enemy) rect() *sdl.Rect {
+	return &sdl.Rect{int32(e.position[0]) - e.w/2, int32(e.position[1]) - e.h/2, e.w, e.h}
+}
+
 func drawEnemies() {
 	for _, enemy := range context.enemies {
 		if enemy.alive {

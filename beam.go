@@ -7,7 +7,8 @@ import (
 )
 
 /*
-could do more advanced stuff like fade as well
+could expose fade as a parameter
+make it look less shit one day
 */
 
 type Beam struct {
@@ -46,7 +47,7 @@ func (b Beam) draw() {
 			width,
 			height,
 		}
-		context.renderer.CopyEx(b.texture, nil, toRect, DEG_TO_RAD*angle, nil, sdl.FLIP_NONE)
+		context.renderer.CopyEx(b.texture, nil, toRect, RAD_TO_DEG*angle, nil, sdl.FLIP_NONE)
 	}
 	b.texture.SetAlphaMod(255)
 	/*

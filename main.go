@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/veandco/go-sdl2/img"
@@ -16,9 +15,6 @@ const (
 	GRIDW    = 15
 	GRIDH    = 15
 )
-
-const DEG_TO_RAD = 180 / math.Pi
-const RAD_TO_DEG = math.Pi / 180
 
 type Context struct {
 	window   *sdl.Window
@@ -36,7 +32,8 @@ type Context struct {
 
 	lives int32
 
-	beams []Beam
+	beams       []Beam
+	projectiles []Projectile
 }
 
 type Cell struct {
@@ -46,10 +43,6 @@ type Cell struct {
 
 	// to come stuff about state like attack cooldown,
 	// ability cooldown etc
-}
-
-func (e Enemy) rect() *sdl.Rect {
-	return &sdl.Rect{int32(e.position[0]) - e.w/2, int32(e.position[1]) - e.h/2, e.w, e.h}
 }
 
 type CellType int32
@@ -137,7 +130,7 @@ func main() {
 						fmt.Println("you clicked", gx, gy)
 						clickedCellIdx := gy*context.gridw + gx
 
-						context.grid[clickedCellIdx].tower = makeTower(Skull)
+						context.grid[clickedCellIdx].tower = makeTower((context.grid[clickedCellIdx].tower.towerType + 1) % NUM_TOWERS)
 					} else {
 						// UI LMB event
 						fmt.Println("ui clicc")
@@ -185,12 +178,25 @@ func main() {
 						if dist(context.enemies[j].position, getTileCenter(int32(i))) < props.attackRange {
 							// found an enemy
 							// probably factor into a damage function eventually that accounts for attack,res and handles death etc
-							context.enemies[j].hp -= props.damage
-							if context.enemies[j].hp <= 0 {
-								context.enemies[j].alive = false
-							}
 							if props.attackType == ATTACK_BEAM {
 								makeBeam(props.attackTexture, getTileCenter(int32(i)), context.enemies[j].position, 0.4)
+								context.enemies[j].hp -= props.damage
+								if context.enemies[j].hp <= 0 {
+									context.enemies[j].alive = false
+								}
+							} else if props.attackType == ATTACK_PROJECTILE {
+								target := context.enemies[j].position
+								makeProjectile(getTileCenter(int32(i)), target, props.attackTexture, 1000, func() {
+									// hope closures work how i think. args vs closing over. args means we provide it at the time? or later idk
+									for k := range context.enemies {
+										if dist(context.enemies[k].position, target) < 50 {
+											context.enemies[j].hp -= props.damage
+											if context.enemies[j].hp <= 0 {
+												context.enemies[j].alive = false
+											}
+										}
+									}
+								})
 							}
 							context.grid[i].tower.cooldown = props.cooldown
 							// you would play a sound or something too
@@ -240,6 +246,12 @@ func main() {
 				context.beams[i].draw()
 			}
 		}
+		for i := range context.projectiles {
+			if context.projectiles[i].timeRemaining > 0 {
+				context.projectiles[i].update(dt)
+				context.projectiles[i].draw()
+			}
+		}
 
 		// draw some text
 		drawText(10, 10, fmt.Sprintf("%.0f FPS", 1/dt), 2)
@@ -252,57 +264,4 @@ func main() {
 			time.Sleep(time.Nanosecond * time.Duration(c))
 		}
 	}
-}
-
-func getTileCenter(idx int32) vec2f {
-	return vec2f{(float64(idx%GRIDW) + 0.5) * float64(context.cellw), (float64(idx/GRIDH) + 0.5) * float64(context.cellh)}
-}
-
-func getTileFromPos(pos vec2f) int32 {
-	ivec := asI32(pos)
-	gx := ivec[0] / context.cellw
-	gy := ivec[1] / context.cellh
-
-	if gx < 0 {
-		panics("Tile gotten from", pos, " is out of bounds x < 0", gx)
-	} else if gx > context.gridw {
-		panics("Tile gotten from", pos, " is out of bounds x > gridw", gx, context.gridw)
-	} else if gy > context.gridh {
-		panics("Tile gotten from", pos, " is out of bounds y > gridh", gy, context.gridh)
-	} else if gy < 0 {
-		panics("Tile gotten from", pos, " is out of bounds y < 0", gy)
-	}
-
-	return gy*context.gridw + gx
-}
-
-type vec2f [2]float64
-type vec2i [2]int32
-
-func vecMul(a, b [2]float64) [2]float64 {
-	return [2]float64{a[0] * b[0], a[1] * b[1]}
-}
-func vecMulScalar(a vec2f, b float64) vec2f {
-	return vec2f{a[0] * b, a[1] * b}
-}
-func vecAdd(a, b [2]float64) [2]float64 {
-	return [2]float64{a[0] + b[0], a[1] + b[1]}
-}
-func asF64(a [2]int32) [2]float64 {
-	return [2]float64{float64(a[0]), float64(a[1])}
-}
-func asI32(a vec2f) vec2i {
-	return vec2i{int32(a[0]), int32(a[1])}
-}
-func dist(a, b vec2f) float64 {
-	return math.Sqrt((a[0]-b[0])*(a[0]-b[0]) + (a[1]-b[1])*(a[1]-b[1]))
-}
-
-// in radians
-func angle(a, b vec2f) float64 {
-	return math.Atan2(b[1]-a[1], b[0]-a[0])
-}
-
-func panics(a ...interface{}) {
-	panic(fmt.Sprint(a...))
 }

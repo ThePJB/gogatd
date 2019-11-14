@@ -13,9 +13,10 @@ type Atlas struct {
 	wall      *sdl.Texture
 	wallTop   *sdl.Texture
 
-	fire      *sdl.Texture
-	skull     *sdl.Texture
-	lightning *sdl.Texture
+	fireTower      *sdl.Texture
+	laserTower     *sdl.Texture
+	skull          *sdl.Texture
+	lightningTower *sdl.Texture
 
 	dude *sdl.Texture
 
@@ -26,7 +27,10 @@ type Atlas struct {
 	bargreen *sdl.Texture
 	barred   *sdl.Texture
 
-	whitebeam *sdl.Texture
+	whitebeam      *sdl.Texture
+	laserBeam      *sdl.Texture
+	lightningBeam  *sdl.Texture
+	fireProjectile *sdl.Texture
 }
 
 func loadAssets() Atlas {
@@ -34,7 +38,6 @@ func loadAssets() Atlas {
 	atlas.path = loadTexture("assets/path.png")
 	atlas.buildable = loadTexture("assets/buildable.png")
 	atlas.skull = loadTexture("assets/spooky.png")
-	atlas.fire = loadTexture("assets/fire.png")
 	atlas.dude = loadTexture("assets/dude.png")
 	atlas.wall = loadTexture("assets/brick.png")
 	atlas.wallTop = loadTexture("assets/brickPerspective.png")
@@ -45,6 +48,12 @@ func loadAssets() Atlas {
 	atlas.bargreen = loadTexture("assets/hpgreen.png")
 	atlas.barred = loadTexture("assets/hpred.png")
 	atlas.whitebeam = loadTexture("assets/whitebeam.png")
+	atlas.laserTower = loadTexture("assets/laserTower.png")
+	atlas.laserBeam = loadTexture("assets/laserbeam.png")
+	atlas.lightningTower = loadTexture("assets/lightningTower.png")
+	atlas.lightningBeam = loadTexture("assets/lightningbeam.png")
+	atlas.fireTower = loadTexture("assets/flametower.png")
+	atlas.fireProjectile = loadTexture("assets/flameProjectile.png")
 
 	return atlas
 }
