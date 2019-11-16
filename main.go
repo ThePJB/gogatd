@@ -34,6 +34,8 @@ type Context struct {
 
 	beams       []Beam
 	projectiles []Projectile
+
+	selectedEnemy int
 }
 
 type Cell struct {
@@ -67,6 +69,7 @@ func main() {
 	context.cellw = GAMEXRES / GRIDW
 	context.cellh = GAMEYRES / GRIDH
 	context.lives = 20
+	context.selectedEnemy = -1
 
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		panic(err)
@@ -101,6 +104,7 @@ func main() {
 	tStart := time.Now().UnixNano()
 	tCurrentStart := float64(tStart) / 1000000000
 	var tLastStart float64
+	points := 100.0
 	for running {
 		tStart = time.Now().UnixNano()
 		tLastStart = tCurrentStart
@@ -111,9 +115,11 @@ func main() {
 		tsinceSpawn += dt
 		if tsinceSpawn >= tspawn {
 			tsinceSpawn = 0
-			spawnEnemy()
+			spawnEnemy(points, uniformChromosome())
+			points += 1
 		}
 
+	OUTER:
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
 			case *sdl.QuitEvent:
@@ -123,6 +129,20 @@ func main() {
 			case *sdl.MouseButtonEvent:
 				if t.Button == sdl.BUTTON_LEFT && t.State == 1 {
 					if t.Y < GAMEYRES {
+						clickpt := sdl.Point{t.X, t.Y}
+						for i := range context.enemies {
+							if !context.enemies[i].alive {
+								continue
+							}
+							r := context.enemies[i].rect()
+							if clickpt.InRect(r) {
+								fmt.Println("you clicked enemy", context.enemies[i])
+								context.selectedEnemy = i
+								continue OUTER
+							}
+						}
+						context.selectedEnemy = -1
+
 						// game LMB event
 						gx := t.X / context.cellw
 						gy := t.Y / context.cellh
@@ -139,30 +159,7 @@ func main() {
 			}
 		}
 		// update
-		for i, enemy := range context.enemies {
-			if !enemy.alive {
-				continue
-			}
-			// move
-			context.enemies[i].position = vecAdd(enemy.position, vecMulScalar(enemy.velocity, dt))
-			currentCell := context.grid[getTileFromPos(enemy.position)]
-			if currentCell.cellType == Orb {
-				context.lives--
-				context.enemies[i].alive = false
-			} else {
-				// only set this near the center of the tile
-				d := dist(getTileCenter(getTileFromPos(enemy.position)), enemy.position)
-				if d < 5.0 {
-					context.enemies[i].velocity = vecMulScalar(asF64(currentCell.pathDir), enemy.speedBase)
-				}
-			}
-
-			// update animation
-			context.enemies[i].animstage += dt
-			if context.enemies[i].animstage > enemy.animmax {
-				context.enemies[i].animstage -= enemy.animmax
-			}
-		}
+		updateEnemies(dt)
 
 		for i := range context.grid {
 			if context.grid[i].tower.towerType != None {
@@ -180,20 +177,14 @@ func main() {
 							// probably factor into a damage function eventually that accounts for attack,res and handles death etc
 							if props.attackType == ATTACK_BEAM {
 								makeBeam(props.attackTexture, getTileCenter(int32(i)), context.enemies[j].position, 0.4)
-								context.enemies[j].hp -= props.damage
-								if context.enemies[j].hp <= 0 {
-									context.enemies[j].alive = false
-								}
+								damage(j, props.damage, props.damageType)
 							} else if props.attackType == ATTACK_PROJECTILE {
 								target := context.enemies[j].position
-								makeProjectile(getTileCenter(int32(i)), target, props.attackTexture, 1000, func() {
+								makeProjectile(getTileCenter(int32(i)), target, props.attackTexture, 600, func() {
 									// hope closures work how i think. args vs closing over. args means we provide it at the time? or later idk
 									for k := range context.enemies {
-										if dist(context.enemies[k].position, target) < 50 {
-											context.enemies[j].hp -= props.damage
-											if context.enemies[j].hp <= 0 {
-												context.enemies[j].alive = false
-											}
+										if dist(context.enemies[k].position, target) < 100 {
+											damage(j, props.damage, props.damageType)
 										}
 									}
 								})
@@ -253,9 +244,15 @@ func main() {
 			}
 		}
 
+		// draw selected ui
+		// a stateful cursor thing would actually probably be quite good
+		if context.selectedEnemy != -1 {
+			drawSelectedEnemy()
+		}
+
 		// draw some text
 		drawText(10, 10, fmt.Sprintf("%.0f FPS", 1/dt), 2)
-		drawText(GAMEXRES-120, 10, fmt.Sprintf("%d Lives", context.lives), 2)
+		drawText(10, 30, fmt.Sprintf("%d Lives", context.lives), 2)
 		context.renderer.Present()
 		tnow := time.Now().UnixNano()
 		currdt := tnow - tStart

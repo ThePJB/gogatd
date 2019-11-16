@@ -13,6 +13,14 @@ const (
 	NUM_TOWERS
 )
 
+type DamageType int32
+
+const (
+	DAMAGE_FIRE DamageType = iota
+	DAMAGE_CHEMICAL
+	DAMAGE_LIGHTNING
+)
+
 type TowerProperties struct {
 	name          string
 	cooldown      float64
@@ -21,6 +29,7 @@ type TowerProperties struct {
 	attackRange   float64
 	attackTexture *sdl.Texture
 	damage        float64
+	damageType    DamageType
 }
 
 var towerProperties []TowerProperties
@@ -36,6 +45,7 @@ func initTowerProps() {
 			200,
 			context.atlas.whitebeam,
 			4,
+			DAMAGE_CHEMICAL,
 		},
 		TowerProperties{
 			"Laser Tower",
@@ -45,6 +55,7 @@ func initTowerProps() {
 			200,
 			context.atlas.laserBeam,
 			1,
+			DAMAGE_FIRE,
 		},
 		TowerProperties{
 			"Fire Tower",
@@ -53,7 +64,8 @@ func initTowerProps() {
 			ATTACK_PROJECTILE,
 			200,
 			context.atlas.fireProjectile,
-			12,
+			9,
+			DAMAGE_FIRE,
 		},
 		TowerProperties{
 			"Lightning Tower",
@@ -62,7 +74,8 @@ func initTowerProps() {
 			ATTACK_BEAM,
 			350,
 			context.atlas.lightningBeam,
-			10,
+			8,
+			DAMAGE_LIGHTNING,
 		},
 		TowerProperties{},
 	}
@@ -89,4 +102,12 @@ func makeTower(tt TowerType) Tower {
 
 func drawTower(t Tower, toRect *sdl.Rect) {
 	context.renderer.CopyEx(towerProperties[t.towerType].texture, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
+}
+
+func damage(enemyIdx int, amount float64, damageType DamageType) {
+	damageAfterRes := amount * (1 - context.enemies[enemyIdx].res[damageType])
+	context.enemies[enemyIdx].hp -= damageAfterRes
+	if context.enemies[enemyIdx].hp <= 0 {
+		killEnemy(enemyIdx)
+	}
 }

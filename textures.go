@@ -18,7 +18,8 @@ type Atlas struct {
 	skull          *sdl.Texture
 	lightningTower *sdl.Texture
 
-	dude *sdl.Texture
+	dude  *sdl.Texture
+	splat *sdl.Texture
 
 	font *sdl.Texture
 	cash *sdl.Texture
@@ -39,6 +40,7 @@ func loadAssets() Atlas {
 	atlas.buildable = loadTexture("assets/buildable.png")
 	atlas.skull = loadTexture("assets/spooky.png")
 	atlas.dude = loadTexture("assets/dude.png")
+	atlas.splat = loadTexture("assets/splat.png")
 	atlas.wall = loadTexture("assets/brick.png")
 	atlas.wallTop = loadTexture("assets/brickPerspective.png")
 	atlas.orb = loadTexture("assets/magicOrb.png")
