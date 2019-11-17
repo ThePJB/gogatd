@@ -11,7 +11,7 @@ import (
 const (
 	GAMEXRES = 900
 	GAMEYRES = 900
-	UIH      = 300
+	UIH      = 200
 	GRIDW    = 15
 	GRIDH    = 15
 )
@@ -30,12 +30,16 @@ type Context struct {
 
 	enemies []Enemy
 
+	wave  int
 	lives int32
 
 	beams       []Beam
 	projectiles []Projectile
 
 	selectedEnemy int
+
+	simTime    float64
+	eventQueue []DoLater
 }
 
 type Cell struct {
@@ -77,6 +81,37 @@ func main() {
 
 	loadTextures()
 	initTowerProps()
+
+	context.eventQueue = append(context.eventQueue, DoLater{
+		from: 1,
+		to:   5,
+		update: func(t float64) {
+			var y int32 = 100
+			if t < 0.1 {
+				tn := t * 10
+				tn = slowStop4(tn)
+				y = int32(0.5 + tn*100)
+			}
+			if t > 0.6 {
+				tn := (t - 0.6) * 2.5
+				tn = slowStart4(tn)
+				y = int32(0.5 + (1-tn)*100)
+			}
+			var alpha uint8 = 255
+			if t > 0.8 {
+				tn := (t - 0.8) * 5
+				alpha = uint8(0.5 + 255.0*(1-tn))
+				//fmt.Println(t, tn, alpha)
+			}
+			context.atlas[TEX_FONT].SetAlphaMod(alpha)
+			w := int32(7)
+			scale := int32(8)
+			s := fmt.Sprintf("Wave 1")
+			est_w := int32(len(s)) * w * scale
+			drawText(GAMEXRES/2-est_w/2, y, s, scale)
+			context.atlas[TEX_FONT].SetAlphaMod(255)
+		},
+	})
 
 	context.grid, context.spawnidx, context.goalidx = makeGrid()
 
@@ -219,6 +254,14 @@ func main() {
 		// a stateful cursor thing would actually probably be quite good
 		if context.selectedEnemy != -1 {
 			drawSelectedEnemy()
+		}
+
+		context.simTime += dt
+		for i := range context.eventQueue {
+			if context.eventQueue[i].from < context.simTime && context.eventQueue[i].to > context.simTime {
+				t := (context.simTime - context.eventQueue[i].from) / (context.eventQueue[i].to - context.eventQueue[i].from)
+				context.eventQueue[i].update(t)
+			}
 		}
 
 		// draw some text

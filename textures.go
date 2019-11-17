@@ -121,20 +121,3 @@ func loadTexture(path string) *sdl.Texture {
 	texture.SetBlendMode(sdl.BLENDMODE_BLEND)
 	return texture
 }
-
-// also could do colour etc
-// 8x32 and 8 px
-func drawText(x, y int32, text string, scale int32) {
-	w := int32(7)
-	h := int32(8)
-	fw := int32(32)
-	for i := range text {
-		destRect := sdl.Rect{x + int32(i)*w*scale, y, w * scale, h * scale}
-		char := int32(text[i])
-		sx := char % fw
-		sy := char / fw
-		srcRect := sdl.Rect{sx * w, sy * h, w, h}
-		context.renderer.CopyEx(context.atlas[TEX_FONT], &srcRect, &destRect, 0.0, nil, sdl.FLIP_NONE)
-	}
-
-}

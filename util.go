@@ -64,3 +64,58 @@ func getTileFromPos(pos vec2f) int32 {
 func logisticFunction(x float64) float64 {
 	return 1 / (1 + math.Exp(-x))
 }
+func slowStart2(x float64) float64 {
+	return x * x
+}
+func slowStart3(x float64) float64 {
+	return x * x * x
+}
+func slowStart4(x float64) float64 {
+	return x * x * x * x
+}
+func slowStop2(x float64) float64 {
+	return 1 - (slowStart2(1 - x))
+}
+func slowStop3(x float64) float64 {
+	return 1 - (slowStart3(1 - x))
+}
+func slowStop4(x float64) float64 {
+	return 1 - (slowStart4(1 - x))
+}
+func slowStartStop2(x float64) float64 {
+	return x*slowStart2(x) + (1-x)*slowStop2(x)
+}
+func slowStartStop3(x float64) float64 {
+	return x*slowStart3(x) + (1-x)*slowStop3(x)
+}
+func slowStartStop4(x float64) float64 {
+	return x*slowStart4(x) + (1-x)*slowStop4(x)
+}
+
+// whats the curve for alpha?
+/*
+func init() {
+	for x := 0.0; x <= 1; x += 0.1 {
+		fmt.Printf("%.2f ", x)
+	}
+	fmt.Println()
+
+	fmt.Println("slowstart2")
+	for x := 0.0; x <= 1; x += 0.1 {
+		fmt.Printf("%.2f ", slowStart2(x))
+	}
+	fmt.Println()
+	fmt.Println("slowstop2")
+	for x := 0.0; x <= 1; x += 0.1 {
+		fmt.Printf("%.2f ", slowStop2(x))
+	}
+	fmt.Println()
+	fmt.Println("slowss2")
+	for x := 0.0; x <= 1; x += 0.1 {
+		fmt.Printf("%.2f ", slowStartStop2(x))
+	}
+	fmt.Println()
+
+	panic("breakpoint")
+}
+*/
