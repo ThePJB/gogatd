@@ -139,25 +139,25 @@ func updateEnemies(dt float64) {
 func drawEnemies() {
 	for _, enemy := range context.enemies {
 		if enemy.alive {
-			context.atlas.dude.SetColorMod(uint8(255*enemy.r), uint8(255*enemy.g), uint8(255*enemy.b))
+			context.atlas[TEX_DUDE].SetColorMod(uint8(255*enemy.r), uint8(255*enemy.g), uint8(255*enemy.b))
 			if enemy.animstage > enemy.animmax/2 {
-				context.renderer.CopyEx(context.atlas.dude, nil, enemy.rect(), 0.0, nil, sdl.FLIP_HORIZONTAL)
+				context.renderer.CopyEx(context.atlas[TEX_DUDE], nil, enemy.rect(), 0.0, nil, sdl.FLIP_HORIZONTAL)
 			} else {
-				context.renderer.CopyEx(context.atlas.dude, nil, enemy.rect(), 0.0, nil, sdl.FLIP_NONE)
+				context.renderer.CopyEx(context.atlas[TEX_DUDE], nil, enemy.rect(), 0.0, nil, sdl.FLIP_NONE)
 			}
 			if enemy.hp < enemy.hpmax {
 				r := enemy.rect()
 				drawHPBar(r.X, r.Y-5, r.W, int32(float64(r.W)*(enemy.hp/enemy.hpmax)))
 			}
-			context.atlas.dude.SetColorMod(255, 255, 255)
+			context.atlas[TEX_DUDE].SetColorMod(255, 255, 255)
 		} else if enemy.splatTime > 0 {
-			context.atlas.splat.SetColorMod(uint8(255*enemy.r), uint8(255*enemy.g), uint8(255*enemy.b))
+			context.atlas[TEX_SPLAT].SetColorMod(uint8(255*enemy.r), uint8(255*enemy.g), uint8(255*enemy.b))
 			if enemy.animstage > enemy.animmax/2 {
-				context.renderer.CopyEx(context.atlas.splat, nil, enemy.rect(), 0.0, nil, sdl.FLIP_HORIZONTAL)
+				context.renderer.CopyEx(context.atlas[TEX_SPLAT], nil, enemy.rect(), 0.0, nil, sdl.FLIP_HORIZONTAL)
 			} else {
-				context.renderer.CopyEx(context.atlas.splat, nil, enemy.rect(), 0.0, nil, sdl.FLIP_NONE)
+				context.renderer.CopyEx(context.atlas[TEX_SPLAT], nil, enemy.rect(), 0.0, nil, sdl.FLIP_NONE)
 			}
-			context.atlas.splat.SetColorMod(255, 255, 255)
+			context.atlas[TEX_SPLAT].SetColorMod(255, 255, 255)
 
 		}
 	}
@@ -166,34 +166,34 @@ func drawEnemies() {
 func drawEnemyToRect(i int, r *sdl.Rect) {
 	enemy := context.enemies[i]
 	if enemy.alive {
-		context.atlas.dude.SetColorMod(uint8(255*enemy.r), uint8(255*enemy.g), uint8(255*enemy.b))
+		context.atlas[TEX_DUDE].SetColorMod(uint8(255*enemy.r), uint8(255*enemy.g), uint8(255*enemy.b))
 		if enemy.animstage > enemy.animmax/2 {
-			context.renderer.CopyEx(context.atlas.dude, nil, r, 0.0, nil, sdl.FLIP_HORIZONTAL)
+			context.renderer.CopyEx(context.atlas[TEX_DUDE], nil, r, 0.0, nil, sdl.FLIP_HORIZONTAL)
 		} else {
-			context.renderer.CopyEx(context.atlas.dude, nil, r, 0.0, nil, sdl.FLIP_NONE)
+			context.renderer.CopyEx(context.atlas[TEX_DUDE], nil, r, 0.0, nil, sdl.FLIP_NONE)
 		}
 		if enemy.hp < enemy.hpmax {
 			drawHPBar(r.X, r.Y-5, r.W, int32(float64(r.W)*(enemy.hp/enemy.hpmax)))
 		}
-		context.atlas.dude.SetColorMod(255, 255, 255)
+		context.atlas[TEX_DUDE].SetColorMod(255, 255, 255)
 	} else /* if enemy.splatTime > 0 */ {
-		context.atlas.splat.SetColorMod(uint8(255*enemy.r), uint8(255*enemy.g), uint8(255*enemy.b))
+		context.atlas[TEX_SPLAT].SetColorMod(uint8(255*enemy.r), uint8(255*enemy.g), uint8(255*enemy.b))
 		if enemy.animstage > enemy.animmax/2 {
-			context.renderer.CopyEx(context.atlas.splat, nil, r, 0.0, nil, sdl.FLIP_HORIZONTAL)
+			context.renderer.CopyEx(context.atlas[TEX_SPLAT], nil, r, 0.0, nil, sdl.FLIP_HORIZONTAL)
 		} else {
-			context.renderer.CopyEx(context.atlas.splat, nil, r, 0.0, nil, sdl.FLIP_NONE)
+			context.renderer.CopyEx(context.atlas[TEX_SPLAT], nil, r, 0.0, nil, sdl.FLIP_NONE)
 		}
-		context.atlas.splat.SetColorMod(255, 255, 255)
+		context.atlas[TEX_SPLAT].SetColorMod(255, 255, 255)
 
 	}
 }
 
 func drawHPBar(x, y, w, g int32) {
 	var h int32 = 6
-	context.renderer.CopyEx(context.atlas.bargreen, nil, &sdl.Rect{x, y, g, h}, 0.0, nil, sdl.FLIP_NONE)
-	context.renderer.CopyEx(context.atlas.barred, nil, &sdl.Rect{x + g, y, w - g, h}, 0.0, nil, sdl.FLIP_NONE)
-	context.renderer.CopyEx(context.atlas.barend, nil, &sdl.Rect{x - 1, y, 2, h}, 0.0, nil, sdl.FLIP_NONE)
-	context.renderer.CopyEx(context.atlas.barend, nil, &sdl.Rect{x + w - 1, y, 2, h}, 0.0, nil, sdl.FLIP_HORIZONTAL)
+	context.renderer.CopyEx(context.atlas[TEX_BARGREEN], nil, &sdl.Rect{x, y, g, h}, 0.0, nil, sdl.FLIP_NONE)
+	context.renderer.CopyEx(context.atlas[TEX_BARRED], nil, &sdl.Rect{x + g, y, w - g, h}, 0.0, nil, sdl.FLIP_NONE)
+	context.renderer.CopyEx(context.atlas[TEX_BAREND], nil, &sdl.Rect{x - 1, y, 2, h}, 0.0, nil, sdl.FLIP_NONE)
+	context.renderer.CopyEx(context.atlas[TEX_BAREND], nil, &sdl.Rect{x + w - 1, y, 2, h}, 0.0, nil, sdl.FLIP_HORIZONTAL)
 }
 
 const SPLAT_TIME = 0.25

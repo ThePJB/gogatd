@@ -34,30 +34,77 @@ type Atlas struct {
 	fireProjectile *sdl.Texture
 }
 
-func loadAssets() Atlas {
-	atlas := Atlas{}
-	atlas.path = loadTexture("assets/path.png")
-	atlas.buildable = loadTexture("assets/buildable.png")
-	atlas.skull = loadTexture("assets/spooky.png")
-	atlas.dude = loadTexture("assets/dude.png")
-	atlas.splat = loadTexture("assets/splat.png")
-	atlas.wall = loadTexture("assets/brick.png")
-	atlas.wallTop = loadTexture("assets/brickPerspective.png")
-	atlas.orb = loadTexture("assets/magicOrb.png")
-	atlas.portal = loadTexture("assets/portal.png")
-	atlas.font = loadTexture("assets/custombold.png")
-	atlas.barend = loadTexture("assets/hpend.png")
-	atlas.bargreen = loadTexture("assets/hpgreen.png")
-	atlas.barred = loadTexture("assets/hpred.png")
-	atlas.whitebeam = loadTexture("assets/whitebeam.png")
-	atlas.laserTower = loadTexture("assets/laserTower.png")
-	atlas.laserBeam = loadTexture("assets/laserbeam.png")
-	atlas.lightningTower = loadTexture("assets/lightningTower.png")
-	atlas.lightningBeam = loadTexture("assets/lightningbeam.png")
-	atlas.fireTower = loadTexture("assets/flametower.png")
-	atlas.fireProjectile = loadTexture("assets/flameProjectile.png")
+type TextureID int
 
-	return atlas
+const (
+	TEX_PATH TextureID = iota
+	TEX_BUILDABLE
+	TEX_PORTAL
+	TEX_ORB
+	TEX_WALL
+	TEX_WALLTOP
+
+	TEX_DUDE
+	TEX_SPLAT
+
+	TEX_FONT
+
+	TEX_BAREND
+	TEX_BARGREEN
+	TEX_BARRED
+
+	TEX_BEAM_WHITE
+	TEX_BEAM_LASER
+	TEX_BEAM_LIGHTNING
+
+	TEX_TOWER_SKULL
+	TEX_TOWER_LASER
+	TEX_TOWER_FIRE
+	TEX_TOWER_LIGHTNING
+
+	TEX_PROJECTILE_FIRE
+
+	NUM_TEXTURES
+)
+
+const (
+	TEX_OFFSET_TOWERS = TEX_TOWER_SKULL
+	TEX_OFFSET_TILES  = TEX_PATH
+)
+
+var TextureNames = [...]string{
+	"path",
+	"buildable",
+	"portal",
+	"magicOrb",
+	"brick",
+	"brickPerspective",
+
+	"dude",
+	"splat",
+
+	"custombold",
+
+	"hpend",
+	"hpgreen",
+	"hpred",
+
+	"whitebeam",
+	"laserbeam",
+	"lightningbeam",
+
+	"spooky",
+	"laserTower",
+	"flametower",
+	"lightningTower",
+
+	"flameProjectile",
+}
+
+func loadTextures() {
+	for i := 0; i < int(NUM_TEXTURES); i++ {
+		context.atlas = append(context.atlas, loadTexture("assets/"+TextureNames[i]+".png"))
+	}
 }
 
 func loadTexture(path string) *sdl.Texture {
@@ -87,7 +134,7 @@ func drawText(x, y int32, text string, scale int32) {
 		sx := char % fw
 		sy := char / fw
 		srcRect := sdl.Rect{sx * w, sy * h, w, h}
-		context.renderer.CopyEx(context.atlas.font, &srcRect, &destRect, 0.0, nil, sdl.FLIP_NONE)
+		context.renderer.CopyEx(context.atlas[TEX_FONT], &srcRect, &destRect, 0.0, nil, sdl.FLIP_NONE)
 	}
 
 }

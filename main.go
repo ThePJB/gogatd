@@ -19,7 +19,7 @@ const (
 type Context struct {
 	window   *sdl.Window
 	renderer *sdl.Renderer
-	atlas    Atlas
+	atlas    []*sdl.Texture
 
 	xres, yres int32
 
@@ -50,13 +50,12 @@ type Cell struct {
 type CellType int32
 
 const (
-	Path       CellType = 0
-	Buildable  CellType = 1
-	TowerSkull CellType = 2
-	Portal     CellType = 3
-	Orb        CellType = 4
-	Wall       CellType = 5
-	WallTop    CellType = 6
+	Path CellType = iota
+	Buildable
+	Portal
+	Orb
+	Wall
+	WallTop
 )
 
 var context Context = Context{}
@@ -71,28 +70,12 @@ func main() {
 	context.lives = 20
 	context.selectedEnemy = -1
 
-	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
-		panic(err)
-	}
-	if imgflags := img.Init(img.INIT_PNG); imgflags != img.INIT_PNG {
-		panic("failed to init png loading")
-	}
-	defer sdl.Quit()
+	initSDL()
+	defer teardownSDL() // defer means we should tear down correctly in the event of a panic
 
-	window, err := sdl.CreateWindow("GOGATD v0.1", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
-		GAMEXRES, GAMEYRES+UIH, sdl.WINDOW_SHOWN)
-	if err != nil {
-		panic(err)
-	}
-	context.window = window
-	defer context.window.Destroy()
+	// catch signals to ensure we tear down correctly if someone ctrl Cs
 
-	renderer, err := sdl.CreateRenderer(context.window, -1, sdl.RENDERER_ACCELERATED)
-	if err != nil {
-		panic(err)
-	}
-	context.renderer = renderer
-	context.atlas = loadAssets()
+	loadTextures()
 	initTowerProps()
 
 	context.grid, context.spawnidx, context.goalidx = makeGrid()
@@ -156,6 +139,8 @@ func main() {
 						fmt.Println("ui clicc")
 					}
 				}
+			case *sdl.KeyboardEvent:
+
 			}
 		}
 		// update
@@ -209,23 +194,9 @@ func main() {
 				(int32(i) / context.gridw) * context.cellh,
 				context.cellw, context.cellh,
 			}
-			switch cell.cellType {
-			case Path:
-				context.renderer.CopyEx(context.atlas.path, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
-			case Portal:
-				context.renderer.CopyEx(context.atlas.path, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
-				context.renderer.CopyEx(context.atlas.portal, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
-			case Orb:
-				context.renderer.CopyEx(context.atlas.path, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
-				context.renderer.CopyEx(context.atlas.orb, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
-			case Buildable:
-				context.renderer.CopyEx(context.atlas.buildable, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
+			context.renderer.CopyEx(context.atlas[TEX_OFFSET_TILES+TextureID(cell.cellType)], nil, toRect, 0.0, nil, sdl.FLIP_NONE)
+			if cell.tower.towerType != None {
 				drawTower(cell.tower, toRect)
-
-			case Wall:
-				context.renderer.CopyEx(context.atlas.wall, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
-			case WallTop:
-				context.renderer.CopyEx(context.atlas.wallTop, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
 			}
 		}
 		// draw enemies
@@ -261,4 +232,39 @@ func main() {
 			time.Sleep(time.Nanosecond * time.Duration(c))
 		}
 	}
+}
+
+func initSDL() {
+	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
+		panic(err)
+	}
+
+	if imgflags := img.Init(img.INIT_PNG); imgflags != img.INIT_PNG {
+		panic("failed to init png loading")
+	}
+
+	window, err := sdl.CreateWindow("GOGATD v0.1", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
+		GAMEXRES, GAMEYRES+UIH, sdl.WINDOW_SHOWN)
+	if err != nil {
+		panic(err)
+	}
+	context.window = window
+
+	renderer, err := sdl.CreateRenderer(context.window, -1, sdl.RENDERER_ACCELERATED)
+	if err != nil {
+		panic(err)
+	}
+	context.renderer = renderer
+}
+
+func teardownSDL() {
+	fmt.Print("Tearing down SDL...")
+	for i := 0; i < int(NUM_TEXTURES); i++ {
+		context.atlas[i].Destroy()
+	}
+	context.window.Destroy()
+	context.renderer.Destroy()
+	img.Quit()
+	sdl.Quit()
+	fmt.Println("Done")
 }
