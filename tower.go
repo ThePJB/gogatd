@@ -103,11 +103,3 @@ func makeTower(tt TowerType) Tower {
 func drawTower(t Tower, toRect *sdl.Rect) {
 	context.renderer.CopyEx(towerProperties[t.towerType].texture, nil, toRect, 0.0, nil, sdl.FLIP_NONE)
 }
-
-func damage(enemyIdx int, amount float64, damageType DamageType) {
-	damageAfterRes := amount * (1 - context.enemies[enemyIdx].res[damageType])
-	context.enemies[enemyIdx].hp -= damageAfterRes
-	if context.enemies[enemyIdx].hp <= 0 {
-		killEnemy(enemyIdx)
-	}
-}

@@ -14,3 +14,6 @@ type DoLater struct {
 // then for gameplay events it would just be a one shot event
 
 // or a (dt) one if i actually needed it
+
+type SpawnEnemyEvent struct {
+}

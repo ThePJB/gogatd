@@ -17,20 +17,12 @@ func drawSelectedEnemy() {
 	drawText(pad+selSize+pad, GAMEYRES+pad+1*textSize+1*pad, fmt.Sprintf("%.0f%% Fire Resist", 100*e.res[DAMAGE_FIRE]), 2)
 	drawText(pad+selSize+pad, GAMEYRES+pad+2*textSize+2*pad, fmt.Sprintf("%.0f%% Chem Resist", 100*e.res[DAMAGE_CHEMICAL]), 2)
 	drawText(pad+selSize+pad, GAMEYRES+pad+3*textSize+3*pad, fmt.Sprintf("%.0f%% Lightning Resist", 100*e.res[DAMAGE_LIGHTNING]), 2)
-	drawText(pad+selSize+pad, GAMEYRES+pad+4*textSize+4*pad, fmt.Sprintf("%.0f%% Speed", e.speedBase), 2)
+	drawText(pad+selSize+pad, GAMEYRES+pad+4*textSize+4*pad, fmt.Sprintf("%.0f px/s Speed", e.speedBase), 2)
 }
 
 // place mode shows grid and ghost tower
 
 // draw qwer buttons for place towers
-
-func drawWaveText(n int) {
-	w := int32(7)
-	scale := int32(8)
-	s := fmt.Sprintf("Wave %d", n)
-	est_w := int32(len(s)) * w * scale
-	drawText(GAMEXRES/2-est_w/2, 100, s, scale)
-}
 
 // also could do colour etc
 // 8x32 and 8 px
@@ -46,4 +38,38 @@ func drawText(x, y int32, text string, scale int32) {
 		srcRect := sdl.Rect{sx * w, sy * h, w, h}
 		context.renderer.CopyEx(context.atlas[TEX_FONT], &srcRect, &destRect, 0.0, nil, sdl.FLIP_NONE)
 	}
+}
+
+func waveAnnounce(n int, t float64) {
+	dt := 6.0
+	context.eventQueue = append(context.eventQueue, DoLater{
+		from: t,
+		to:   t + dt,
+		update: func(t float64) {
+			var y int32 = 100
+			if t < 0.2 {
+				tn := t / 0.2
+				tn = slowStop4(tn)
+				y = int32(0.5 + tn*100)
+			}
+			if t > 0.6 {
+				tn := (t - 0.6) / 0.6
+				tn = slowStart4(tn)
+				y = int32(0.5 + (1-tn)*100)
+			}
+			var alpha uint8 = 255
+			if t > 0.8 {
+				tn := (t - 0.8) / 0.8
+				alpha = uint8(0.5 + 255.0*(1-tn))
+				//fmt.Println(t, tn, alpha)
+			}
+			context.atlas[TEX_FONT].SetAlphaMod(alpha)
+			w := int32(7)
+			scale := int32(8)
+			s := fmt.Sprintf("Wave %d", n)
+			est_w := int32(len(s)) * w * scale
+			drawText(GAMEXRES/2-est_w/2, y, s, scale)
+			context.atlas[TEX_FONT].SetAlphaMod(255)
+		},
+	})
 }

@@ -20,6 +20,9 @@ func vecMulScalar(a vec2f, b float64) vec2f {
 func vecAdd(a, b [2]float64) [2]float64 {
 	return [2]float64{a[0] + b[0], a[1] + b[1]}
 }
+func vecSub(a, b [2]float64) [2]float64 {
+	return [2]float64{a[0] - b[0], a[1] - b[1]}
+}
 func asF64(a [2]int32) [2]float64 {
 	return [2]float64{float64(a[0]), float64(a[1])}
 }
@@ -28,6 +31,19 @@ func asI32(a vec2f) vec2i {
 }
 func dist(a, b vec2f) float64 {
 	return math.Sqrt((a[0]-b[0])*(a[0]-b[0]) + (a[1]-b[1])*(a[1]-b[1]))
+}
+func cross2d(a, b vec2f) float64 {
+	return a[0]*b[1] - b[0]*a[1]
+}
+func rot90(a vec2f) vec2f {
+	return vec2f{-a[1], a[0]}
+}
+
+func (a vec2f) norm() float64 {
+	return math.Sqrt(a[0]*a[0] + a[1]*a[1])
+}
+func (a vec2f) unit() vec2f {
+	return vecMulScalar(a, 1/math.Sqrt(a[0]*a[0]+a[1]*a[1]))
 }
 
 // in radians
@@ -60,7 +76,20 @@ func getTileFromPos(pos vec2f) int32 {
 
 	return gy*context.gridw + gx
 }
-
+func min(a, b float64) float64 {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+func max(a, b float64) float64 {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
+}
 func logisticFunction(x float64) float64 {
 	return 1 / (1 + math.Exp(-x))
 }

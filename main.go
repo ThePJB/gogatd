@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/veandco/go-sdl2/img"
@@ -16,6 +17,27 @@ const (
 	GRIDH    = 15
 )
 
+const (
+	INTER_WAVE_TIME  = 5.0
+	INTER_ENEMY_TIME = 1.0
+)
+
+const (
+	DESIRED_ENEMIES         = 20
+	ENEMY_STRENGTH_PER_WAVE = 20
+)
+
+const (
+	FFWD_SPEED = 10
+)
+
+type GameState int
+
+const (
+	BETWEEN_WAVE GameState = iota
+	IN_WAVE
+)
+
 type Context struct {
 	window   *sdl.Window
 	renderer *sdl.Renderer
@@ -28,9 +50,9 @@ type Context struct {
 	gridw, gridh      int32
 	cellw, cellh      int32
 
-	enemies []Enemy
+	parentGeneration []Enemy
+	enemies          []Enemy
 
-	wave  int
 	lives int32
 
 	beams       []Beam
@@ -40,6 +62,11 @@ type Context struct {
 
 	simTime    float64
 	eventQueue []DoLater
+
+	waveNumber         int
+	enemyStrength      float64
+	state              GameState
+	stateChangeTimeAcc float64
 }
 
 type Cell struct {
@@ -65,6 +92,7 @@ const (
 var context Context = Context{}
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 	context.xres = GAMEXRES
 	context.yres = GAMEYRES
 	context.gridw = GRIDW
@@ -73,7 +101,11 @@ func main() {
 	context.cellh = GAMEYRES / GRIDH
 	context.lives = 20
 	context.selectedEnemy = -1
+	context.enemyStrength = 60
+	context.waveNumber = 0
+	context.state = 0
 
+	context.stateChangeTimeAcc = 0
 	initSDL()
 	defer teardownSDL() // defer means we should tear down correctly in the event of a panic
 
@@ -82,61 +114,76 @@ func main() {
 	loadTextures()
 	initTowerProps()
 
-	context.eventQueue = append(context.eventQueue, DoLater{
-		from: 1,
-		to:   5,
-		update: func(t float64) {
-			var y int32 = 100
-			if t < 0.1 {
-				tn := t * 10
-				tn = slowStop4(tn)
-				y = int32(0.5 + tn*100)
-			}
-			if t > 0.6 {
-				tn := (t - 0.6) * 2.5
-				tn = slowStart4(tn)
-				y = int32(0.5 + (1-tn)*100)
-			}
-			var alpha uint8 = 255
-			if t > 0.8 {
-				tn := (t - 0.8) * 5
-				alpha = uint8(0.5 + 255.0*(1-tn))
-				//fmt.Println(t, tn, alpha)
-			}
-			context.atlas[TEX_FONT].SetAlphaMod(alpha)
-			w := int32(7)
-			scale := int32(8)
-			s := fmt.Sprintf("Wave 1")
-			est_w := int32(len(s)) * w * scale
-			drawText(GAMEXRES/2-est_w/2, y, s, scale)
-			context.atlas[TEX_FONT].SetAlphaMod(255)
-		},
-	})
-
 	context.grid, context.spawnidx, context.goalidx = makeGrid()
 
-	tspawn := 1.0
-	tsinceSpawn := 0.0
+	// initial chromosomes
+	for i := 0; i < DESIRED_ENEMIES; i++ {
+		context.parentGeneration = append(context.parentGeneration, makeEnemy(0, uniformChromosome()))
+	}
+
+	doffwd := false
 
 	running := true
 	tStart := time.Now().UnixNano()
 	tCurrentStart := float64(tStart) / 1000000000
 	var tLastStart float64
-	points := 100.0
 	for running {
 		tStart = time.Now().UnixNano()
 		tLastStart = tCurrentStart
 		tCurrentStart = float64(tStart) / 1000000000
 
 		dt := tCurrentStart - tLastStart
-
-		tsinceSpawn += dt
-		if tsinceSpawn >= tspawn {
-			tsinceSpawn = 0
-			spawnEnemy(points, uniformChromosome())
-			points += 1
+		if doffwd {
+			dt *= 5
 		}
 
+		//fmt.Println(context.stateChangeTimeAcc, context.state, len(context.enemies), len(context.parentGeneration))
+
+		// Game progression stuff:
+		context.stateChangeTimeAcc += dt
+		switch context.state {
+		case BETWEEN_WAVE:
+			// does nothing in this state
+
+			// transition:
+			if context.stateChangeTimeAcc > INTER_WAVE_TIME {
+				context.waveNumber += 1
+				context.enemyStrength += ENEMY_STRENGTH_PER_WAVE
+				waveAnnounce(context.waveNumber, context.simTime) // doesnt happen
+				context.stateChangeTimeAcc = 99999999999          // spawn enemy immediately
+				context.state = IN_WAVE
+			}
+		case IN_WAVE:
+			// spawns enemy if timer < inter enemy time and number of enemies less than desired number
+			if len(context.enemies) < DESIRED_ENEMIES && context.stateChangeTimeAcc > INTER_ENEMY_TIME {
+				context.stateChangeTimeAcc = 0
+				context.enemies = append(context.enemies, makeEnemy(context.enemyStrength, doTournamentSelection().mutate()))
+			}
+
+			// check if all enemies are dead and done splatting (if I refactored splatting into a vfx it wouldnt be necessary to check here)
+			// also unselect any selection if enemy is removed
+			anyLivingEnemies := false
+			for i := range context.enemies {
+				if context.enemies[i].alive || context.enemies[i].splatTime > 0 {
+					anyLivingEnemies = true
+				}
+			}
+
+			if !anyLivingEnemies && len(context.enemies) == DESIRED_ENEMIES {
+				// initiate transition to next wave
+				context.selectedEnemy = -1
+				context.parentGeneration = context.enemies
+				context.enemies = []Enemy{}
+				context.state = BETWEEN_WAVE
+				context.stateChangeTimeAcc = 0
+			}
+
+			// transition is contingent on number of living enemies
+			// upon transition we breed up the next thing of enemies
+			// and increase raw strength
+		}
+
+		// handle input
 	OUTER:
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
@@ -175,9 +222,18 @@ func main() {
 					}
 				}
 			case *sdl.KeyboardEvent:
+				if t.Keysym.Sym == sdl.K_RIGHTBRACKET {
+					if t.State == sdl.PRESSED {
+						doffwd = true
+					} else {
+						doffwd = false
+					}
+				}
+			case *sdl.MouseMotionEvent:
 
 			}
 		}
+
 		// update
 		updateEnemies(dt)
 
