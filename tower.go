@@ -30,6 +30,7 @@ type TowerProperties struct {
 	attackTexture *sdl.Texture
 	damage        float64
 	damageType    DamageType
+	cost          int
 }
 
 var towerProperties []TowerProperties
@@ -46,6 +47,7 @@ func initTowerProps() {
 			context.atlas[TEX_BEAM_WHITE],
 			4,
 			DAMAGE_CHEMICAL,
+			4,
 		},
 		TowerProperties{
 			"Laser Tower",
@@ -56,6 +58,7 @@ func initTowerProps() {
 			context.atlas[TEX_BEAM_LASER],
 			1,
 			DAMAGE_FIRE,
+			5,
 		},
 		TowerProperties{
 			"Fire Tower",
@@ -66,6 +69,7 @@ func initTowerProps() {
 			context.atlas[TEX_PROJECTILE_FIRE],
 			9,
 			DAMAGE_FIRE,
+			10,
 		},
 		TowerProperties{
 			"Lightning Tower",
@@ -76,6 +80,7 @@ func initTowerProps() {
 			context.atlas[TEX_BEAM_LIGHTNING],
 			8,
 			DAMAGE_LIGHTNING,
+			6,
 		},
 		TowerProperties{},
 	}

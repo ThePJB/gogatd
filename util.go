@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"math"
+
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 const RAD_TO_DEG = 180 / math.Pi
@@ -57,6 +59,14 @@ func panics(a ...interface{}) {
 
 func getTileCenter(idx int32) vec2f {
 	return vec2f{(float64(idx%GRIDW) + 0.5) * float64(context.cellw), (float64(idx/GRIDH) + 0.5) * float64(context.cellh)}
+}
+
+func getTileRect(idx int32) *sdl.Rect {
+	return &sdl.Rect{
+		(int32(idx) % context.gridw) * context.cellw,
+		(int32(idx) / context.gridw) * context.cellh,
+		context.cellw, context.cellh,
+	}
 }
 
 func getTileFromPos(pos vec2f) int32 {

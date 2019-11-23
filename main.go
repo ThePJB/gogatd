@@ -67,6 +67,9 @@ type Context struct {
 	enemyStrength      float64
 	state              GameState
 	stateChangeTimeAcc float64
+
+	placingTower TowerType
+	money        int
 }
 
 type Cell struct {
@@ -91,7 +94,17 @@ const (
 
 var context Context = Context{}
 
+var keymap []sdl.Keycode
+
 func main() {
+	keymap = []sdl.Keycode{
+		sdl.K_ESCAPE,
+		sdl.K_q,
+		sdl.K_w,
+		sdl.K_e,
+		sdl.K_r,
+		sdl.K_t,
+	}
 	rand.Seed(time.Now().UnixNano())
 	context.xres = GAMEXRES
 	context.yres = GAMEYRES
@@ -104,6 +117,8 @@ func main() {
 	context.enemyStrength = 60
 	context.waveNumber = 0
 	context.state = 0
+
+	context.money = 20
 
 	context.stateChangeTimeAcc = 0
 	initSDL()
@@ -127,6 +142,11 @@ func main() {
 	tStart := time.Now().UnixNano()
 	tCurrentStart := float64(tStart) / 1000000000
 	var tLastStart float64
+	var CursorX int32
+	var CursorY int32
+	var TileX int32
+	var TileY int32
+	var HoverTile int32
 	for running {
 		tStart = time.Now().UnixNano()
 		tLastStart = tCurrentStart
@@ -195,27 +215,34 @@ func main() {
 				if t.Button == sdl.BUTTON_LEFT && t.State == 1 {
 					if t.Y < GAMEYRES {
 						clickpt := sdl.Point{t.X, t.Y}
-						for i := range context.enemies {
-							if !context.enemies[i].alive {
-								continue
-							}
-							r := context.enemies[i].rect()
-							if clickpt.InRect(r) {
-								fmt.Println("you clicked enemy", context.enemies[i])
-								context.selectedEnemy = i
-								continue OUTER
-							}
-						}
-						context.selectedEnemy = -1
-
-						// game LMB event
 						gx := t.X / context.cellw
 						gy := t.Y / context.cellh
-
-						fmt.Println("you clicked", gx, gy)
 						clickedCellIdx := gy*context.gridw + gx
 
-						context.grid[clickedCellIdx].tower = makeTower((context.grid[clickedCellIdx].tower.towerType + 1) % NUM_TOWERS)
+						if context.placingTower != None {
+							if towerProperties[context.placingTower].cost <= context.money {
+								context.money -= towerProperties[context.placingTower].cost
+								context.grid[clickedCellIdx].tower = makeTower(context.placingTower)
+								context.placingTower = None
+							} else {
+								// not enough money
+								fmt.Println("insufficient money", context.money)
+							}
+						} else {
+							// see if we clicked an enemy
+							for i := range context.enemies {
+								if !context.enemies[i].alive {
+									continue
+								}
+								r := context.enemies[i].rect()
+								if clickpt.InRect(r) {
+									fmt.Println("you clicked enemy", context.enemies[i])
+									context.selectedEnemy = i
+									continue OUTER
+								}
+							}
+							context.selectedEnemy = -1
+						}
 					} else {
 						// UI LMB event
 						fmt.Println("ui clicc")
@@ -229,8 +256,23 @@ func main() {
 						doffwd = false
 					}
 				}
+				if t.State == sdl.PRESSED {
+					for i, k := range keymap {
+						if t.Keysym.Sym == k {
+							if context.placingTower == TowerType(i) {
+								context.placingTower = None
+							} else {
+								context.placingTower = TowerType(i)
+							}
+						}
+					}
+				}
 			case *sdl.MouseMotionEvent:
-
+				CursorX = t.X
+				CursorY = t.Y
+				TileX = t.X / context.cellw
+				TileY = t.Y / context.cellh
+				HoverTile = TileY*context.gridw + TileX
 			}
 		}
 
@@ -320,6 +362,26 @@ func main() {
 			}
 		}
 
+		// if in tower place mode, draw
+		if context.placingTower != None {
+			context.renderer.SetDrawColor(255, 255, 255, 64)
+			context.renderer.FillRect(&sdl.Rect{0, 0, GAMEXRES, GAMEYRES})
+			context.renderer.SetDrawColor(200, 200, 200, 255)
+			var i int32
+			for i = 0; i < GRIDW; i++ {
+				context.renderer.FillRect(&sdl.Rect{-1 + i*GAMEXRES/GRIDW, 0, 2, GAMEYRES})
+			}
+			for i = 0; i < GRIDH; i++ {
+				context.renderer.FillRect(&sdl.Rect{0, -1 + i*GAMEYRES/GRIDH, GAMEXRES, 2})
+			}
+			// draw ghost tower
+			if CursorY < GAMEYRES && CursorX < GAMEXRES {
+				towerProperties[context.placingTower].texture.SetAlphaMod(128)
+				context.renderer.CopyEx(towerProperties[context.placingTower].texture, nil, getTileRect(HoverTile), 0.0, nil, sdl.FLIP_NONE)
+				towerProperties[context.placingTower].texture.SetAlphaMod(255)
+			}
+
+		}
 		// draw some text
 		drawText(10, 10, fmt.Sprintf("%.0f FPS", 1/dt), 2)
 		drawText(10, 30, fmt.Sprintf("%d Lives", context.lives), 2)
@@ -354,6 +416,7 @@ func initSDL() {
 		panic(err)
 	}
 	context.renderer = renderer
+	context.renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
 }
 
 func teardownSDL() {

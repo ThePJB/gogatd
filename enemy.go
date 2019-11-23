@@ -237,6 +237,7 @@ const SPLAT_TIME = 0.25
 func killEnemy(i int) {
 	context.enemies[i].alive = false
 	context.enemies[i].splatTime = SPLAT_TIME
+	context.money += 1
 }
 
 func doTournamentSelection() Chromosome {
