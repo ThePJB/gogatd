@@ -24,7 +24,7 @@ const (
 
 const (
 	DESIRED_ENEMIES         = 20
-	ENEMY_STRENGTH_PER_WAVE = 20
+	ENEMY_STRENGTH_PER_WAVE = 40
 )
 
 const (
@@ -59,6 +59,7 @@ type Context struct {
 	projectiles []Projectile
 
 	selectedEnemy int
+	selectedTower int
 
 	simTime    float64
 	eventQueue []DoLater
@@ -114,6 +115,7 @@ func main() {
 	context.cellh = GAMEYRES / GRIDH
 	context.lives = 20
 	context.selectedEnemy = -1
+	context.selectedTower = -1
 	context.enemyStrength = 60
 	context.waveNumber = 0
 	context.state = 0
@@ -197,10 +199,6 @@ func main() {
 				context.state = BETWEEN_WAVE
 				context.stateChangeTimeAcc = 0
 			}
-
-			// transition is contingent on number of living enemies
-			// upon transition we breed up the next thing of enemies
-			// and increase raw strength
 		}
 
 		// handle input
@@ -219,7 +217,7 @@ func main() {
 						gy := t.Y / context.cellh
 						clickedCellIdx := gy*context.gridw + gx
 
-						if context.placingTower != None {
+						if context.placingTower != None && context.grid[clickedCellIdx].cellType == Buildable {
 							if towerProperties[context.placingTower].cost <= context.money {
 								context.money -= towerProperties[context.placingTower].cost
 								context.grid[clickedCellIdx].tower = makeTower(context.placingTower)
@@ -228,6 +226,8 @@ func main() {
 								// not enough money
 								fmt.Println("insufficient money", context.money)
 							}
+						} else if context.selectedTower != -1 && context.grid[clickedCellIdx].tower != None {
+							drawSelectedTower()
 						} else {
 							// see if we clicked an enemy
 							for i := range context.enemies {
@@ -295,14 +295,14 @@ func main() {
 							// probably factor into a damage function eventually that accounts for attack,res and handles death etc
 							if props.attackType == ATTACK_BEAM {
 								makeBeam(props.attackTexture, getTileCenter(int32(i)), context.enemies[j].position, 0.4)
-								damage(j, props.damage, props.damageType)
+								damage(i, j)
 							} else if props.attackType == ATTACK_PROJECTILE {
 								target := context.enemies[j].position
 								makeProjectile(getTileCenter(int32(i)), target, props.attackTexture, 600, func() {
 									// hope closures work how i think. args vs closing over. args means we provide it at the time? or later idk
 									for k := range context.enemies {
 										if dist(context.enemies[k].position, target) < 100 {
-											damage(j, props.damage, props.damageType)
+											damage(i, j) // dont think this is working, needs work anyway
 										}
 									}
 								})

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 
@@ -277,10 +276,10 @@ func (c Chromosome) mutate() Chromosome {
 	return c.norm()
 }
 
-func damage(enemyIdx int, amount float64, damageType DamageType) {
-	if damageType == DAMAGE_CHEMICAL {
-		fmt.Println("chem dmg")
-	}
+// tower enemy, careful, its bad api design lol
+func damage(towerIdx int, enemyIdx int) {
+	amount := towerProperties[context.grid[towerIdx].tower.towerType].damage
+	damageType := towerProperties[context.grid[towerIdx].tower.towerType].damageType
 	damageAfterRes := amount * (1 - context.enemies[enemyIdx].res[damageType])
 	damageBlocked := amount * context.enemies[enemyIdx].res[damageType]
 	context.enemies[enemyIdx].hp -= damageAfterRes
@@ -288,5 +287,6 @@ func damage(enemyIdx int, amount float64, damageType DamageType) {
 
 	if context.enemies[enemyIdx].hp <= 0 {
 		killEnemy(enemyIdx)
+		context.grid[towerIdx].tower.kills += 1
 	}
 }

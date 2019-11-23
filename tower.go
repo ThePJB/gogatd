@@ -96,6 +96,7 @@ const (
 type Tower struct {
 	towerType TowerType
 	cooldown  float64
+	kills     int
 }
 
 func makeTower(tt TowerType) Tower {

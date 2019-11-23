@@ -20,6 +20,10 @@ func drawSelectedEnemy() {
 	drawText(pad+selSize+pad, GAMEYRES+pad+4*textSize+4*pad, fmt.Sprintf("%.0f px/s Speed", e.speedBase), 2)
 }
 
+func drawSelectedTower() {
+
+}
+
 // place mode shows grid and ghost tower
 
 // draw qwer buttons for place towers
