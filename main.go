@@ -385,6 +385,9 @@ func main() {
 		// draw some text
 		drawText(10, 10, fmt.Sprintf("%.0f FPS", 1/dt), 2)
 		drawText(10, 30, fmt.Sprintf("%d Lives", context.lives), 2)
+		context.renderer.CopyEx(context.atlas[TEX_CASH], nil, &sdl.Rect{10, 50, 20, 20}, 0, nil, sdl.FLIP_NONE)
+		drawText(30, 50, fmt.Sprintf("%d", context.money), 2)
+
 		context.renderer.Present()
 		tnow := time.Now().UnixNano()
 		currdt := tnow - tStart

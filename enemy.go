@@ -235,9 +235,12 @@ func drawHPBar(x, y, w, g int32) {
 const SPLAT_TIME = 0.25
 
 func killEnemy(i int) {
-	context.enemies[i].alive = false
-	context.enemies[i].splatTime = SPLAT_TIME
-	context.money += 1
+	// what is dead may never die
+	if context.enemies[i].alive {
+		context.enemies[i].alive = false
+		context.enemies[i].splatTime = SPLAT_TIME
+		context.money += 1
+	}
 }
 
 func doTournamentSelection() Chromosome {

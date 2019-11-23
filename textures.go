@@ -5,35 +5,6 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
-type Atlas struct {
-	path      *sdl.Texture
-	buildable *sdl.Texture
-	portal    *sdl.Texture
-	orb       *sdl.Texture
-	wall      *sdl.Texture
-	wallTop   *sdl.Texture
-
-	fireTower      *sdl.Texture
-	laserTower     *sdl.Texture
-	skull          *sdl.Texture
-	lightningTower *sdl.Texture
-
-	dude  *sdl.Texture
-	splat *sdl.Texture
-
-	font *sdl.Texture
-	cash *sdl.Texture
-
-	barend   *sdl.Texture
-	bargreen *sdl.Texture
-	barred   *sdl.Texture
-
-	whitebeam      *sdl.Texture
-	laserBeam      *sdl.Texture
-	lightningBeam  *sdl.Texture
-	fireProjectile *sdl.Texture
-}
-
 type TextureID int
 
 const (
@@ -48,6 +19,7 @@ const (
 	TEX_SPLAT
 
 	TEX_FONT
+	TEX_CASH
 
 	TEX_BAREND
 	TEX_BARGREEN
@@ -84,6 +56,7 @@ var TextureNames = [...]string{
 	"splat",
 
 	"custombold",
+	"dolla",
 
 	"hpend",
 	"hpgreen",
