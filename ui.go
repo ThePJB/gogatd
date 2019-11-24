@@ -21,7 +21,24 @@ func drawSelectedEnemy() {
 }
 
 func drawSelectedTower() {
+	t := context.grid[context.selectedTower].tower
+	pad := int32(10)
+	var textSize int32 = 14
+	var selSize int32 = 200
+	selRect := &sdl.Rect{pad, GAMEYRES + pad, selSize, selSize}
+	cursorX := pad + selSize + pad
+	cursorY := GAMEYRES + pad
 
+	props := towerProperties[t.towerType]
+	drawTower(t, selRect)
+	drawText(cursorX, cursorY, fmt.Sprintf("%.0f %s Damage", props.damage, damageNames[props.damageType]), 2)
+	cursorY += textSize + pad
+	drawText(cursorX, cursorY, fmt.Sprintf("%.0f range", props.attackRange), 2)
+	cursorY += textSize + pad
+	drawText(cursorX, cursorY, fmt.Sprintf("%.2f second cooldown", props.cooldown), 2)
+	cursorY += textSize + pad
+	drawText(cursorX, cursorY, fmt.Sprintf("%d kills", t.kills), 2)
+	cursorY += textSize + pad
 }
 
 // place mode shows grid and ghost tower
@@ -46,7 +63,7 @@ func drawText(x, y int32, text string, scale int32) {
 
 func waveAnnounce(n int, t float64) {
 	dt := 6.0
-	context.eventQueue = append(context.eventQueue, DoLater{
+	context.tweens = append(context.tweens, Tween{
 		from: t,
 		to:   t + dt,
 		update: func(t float64) {

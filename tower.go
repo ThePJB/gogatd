@@ -21,6 +21,12 @@ const (
 	DAMAGE_LIGHTNING
 )
 
+var damageNames = [...]string{
+	"fire",
+	"chemical",
+	"lightning",
+}
+
 type TowerProperties struct {
 	name          string
 	cooldown      float64

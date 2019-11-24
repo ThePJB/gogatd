@@ -3,7 +3,7 @@ package main
 // maybe it should be called the tweener or something
 // esp for graphics
 // I could make this just literally a graphics one, since its order matters and everything as well
-type DoLater struct {
+type Tween struct {
 	from   float64
 	to     float64
 	update func(t float64) // analytical 0..1
@@ -15,5 +15,11 @@ type DoLater struct {
 
 // or a (dt) one if i actually needed it
 
-type SpawnEnemyEvent struct {
+type Event struct {
+	when   float64
+	action func()
+	done   bool
 }
+
+// for now we can just loop through
+// later make it a pq maybe

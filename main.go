@@ -59,10 +59,11 @@ type Context struct {
 	projectiles []Projectile
 
 	selectedEnemy int
-	selectedTower int
+	selectedTower int32
 
-	simTime    float64
-	eventQueue []DoLater
+	simTime float64
+	tweens  []Tween
+	events  []Event
 
 	waveNumber         int
 	enemyStrength      float64
@@ -158,6 +159,14 @@ func main() {
 		if doffwd {
 			dt *= 5
 		}
+		context.simTime += dt
+
+		for i := range context.events {
+			if !context.events[i].done && context.simTime > context.events[i].when {
+				context.events[i].done = true
+				context.events[i].action()
+			}
+		}
 
 		//fmt.Println(context.stateChangeTimeAcc, context.state, len(context.enemies), len(context.parentGeneration))
 
@@ -218,6 +227,7 @@ func main() {
 						clickedCellIdx := gy*context.gridw + gx
 
 						if context.placingTower != None && context.grid[clickedCellIdx].cellType == Buildable {
+							context.selectedTower = -1
 							if towerProperties[context.placingTower].cost <= context.money {
 								context.money -= towerProperties[context.placingTower].cost
 								context.grid[clickedCellIdx].tower = makeTower(context.placingTower)
@@ -226,9 +236,10 @@ func main() {
 								// not enough money
 								fmt.Println("insufficient money", context.money)
 							}
-						} else if context.selectedTower != -1 && context.grid[clickedCellIdx].tower != None {
-							drawSelectedTower()
+						} else if context.grid[clickedCellIdx].tower.towerType != None {
+							context.selectedTower = clickedCellIdx
 						} else {
+							context.selectedTower = -1
 							// see if we clicked an enemy
 							for i := range context.enemies {
 								if !context.enemies[i].alive {
@@ -238,6 +249,7 @@ func main() {
 								if clickpt.InRect(r) {
 									fmt.Println("you clicked enemy", context.enemies[i])
 									context.selectedEnemy = i
+									context.selectedTower = -1
 									continue OUTER
 								}
 							}
@@ -247,6 +259,8 @@ func main() {
 						// UI LMB event
 						fmt.Println("ui clicc")
 					}
+				} else if t.Button == sdl.BUTTON_RIGHT {
+					context.placingTower = None
 				}
 			case *sdl.KeyboardEvent:
 				if t.Keysym.Sym == sdl.K_RIGHTBRACKET {
@@ -259,6 +273,7 @@ func main() {
 				if t.State == sdl.PRESSED {
 					for i, k := range keymap {
 						if t.Keysym.Sym == k {
+							context.selectedTower = -1
 							if context.placingTower == TowerType(i) {
 								context.placingTower = None
 							} else {
@@ -298,14 +313,7 @@ func main() {
 								damage(i, j)
 							} else if props.attackType == ATTACK_PROJECTILE {
 								target := context.enemies[j].position
-								makeProjectile(getTileCenter(int32(i)), target, props.attackTexture, 600, func() {
-									// hope closures work how i think. args vs closing over. args means we provide it at the time? or later idk
-									for k := range context.enemies {
-										if dist(context.enemies[k].position, target) < 100 {
-											damage(i, j) // dont think this is working, needs work anyway
-										}
-									}
-								})
+								makeProjectileAoE(getTileCenter(int32(i)), target, props.attackTexture, 600, 100, i)
 							}
 							context.grid[i].tower.cooldown = props.cooldown
 							// you would play a sound or something too
@@ -353,12 +361,14 @@ func main() {
 		if context.selectedEnemy != -1 {
 			drawSelectedEnemy()
 		}
+		if context.selectedTower != -1 {
+			drawSelectedTower()
+		}
 
-		context.simTime += dt
-		for i := range context.eventQueue {
-			if context.eventQueue[i].from < context.simTime && context.eventQueue[i].to > context.simTime {
-				t := (context.simTime - context.eventQueue[i].from) / (context.eventQueue[i].to - context.eventQueue[i].from)
-				context.eventQueue[i].update(t)
+		for i := range context.tweens {
+			if context.tweens[i].from < context.simTime && context.tweens[i].to > context.simTime {
+				t := (context.simTime - context.tweens[i].from) / (context.tweens[i].to - context.tweens[i].from)
+				context.tweens[i].update(t)
 			}
 		}
 
