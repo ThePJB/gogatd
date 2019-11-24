@@ -239,6 +239,7 @@ func killEnemy(i int) {
 		context.enemies[i].alive = false
 		context.enemies[i].splatTime = SPLAT_TIME
 		context.money += 1
+		context.chunks[CHUNK_DIE].Play(-1, 0)
 	}
 }
 

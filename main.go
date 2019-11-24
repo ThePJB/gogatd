@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/veandco/go-sdl2/img"
+	"github.com/veandco/go-sdl2/mix"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -42,6 +43,7 @@ type Context struct {
 	window   *sdl.Window
 	renderer *sdl.Renderer
 	atlas    []*sdl.Texture
+	chunks   []*mix.Chunk
 
 	xres, yres int32
 
@@ -130,6 +132,7 @@ func main() {
 	// catch signals to ensure we tear down correctly if someone ctrl Cs
 
 	loadTextures()
+	loadChunks()
 	initTowerProps()
 
 	context.grid, context.spawnidx, context.goalidx = makeGrid()
@@ -181,7 +184,7 @@ func main() {
 				context.waveNumber += 1
 				context.enemyStrength += ENEMY_STRENGTH_PER_WAVE
 				waveAnnounce(context.waveNumber, context.simTime) // doesnt happen
-				context.stateChangeTimeAcc = 99999999999          // spawn enemy immediately
+				context.stateChangeTimeAcc = 0                    // spawn enemy after delay
 				context.state = IN_WAVE
 			}
 		case IN_WAVE:
@@ -310,10 +313,12 @@ func main() {
 							// probably factor into a damage function eventually that accounts for attack,res and handles death etc
 							if props.attackType == ATTACK_BEAM {
 								makeBeam(props.attackTexture, getTileCenter(int32(i)), context.enemies[j].position, 0.4)
+								context.chunks[props.attackSound].Play(-1, 0)
 								damage(i, j)
 							} else if props.attackType == ATTACK_PROJECTILE {
 								target := context.enemies[j].position
-								makeProjectileAoE(getTileCenter(int32(i)), target, props.attackTexture, 600, 100, i)
+								context.chunks[props.attackSound].Play(-1, 0)
+								makeProjectileAoE(getTileCenter(int32(i)), target, props.attackTexture, 600, 100, i, props.attackLandSound)
 							}
 							context.grid[i].tower.cooldown = props.cooldown
 							// you would play a sound or something too
@@ -417,6 +422,9 @@ func initSDL() {
 		panic("failed to init png loading")
 	}
 
+	if err := mix.OpenAudio(22050, mix.DEFAULT_FORMAT, 2, 4096); err != nil {
+		panic(err)
+	}
 	window, err := sdl.CreateWindow("GOGATD v0.1", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		GAMEXRES, GAMEYRES+UIH, sdl.WINDOW_SHOWN)
 	if err != nil {
@@ -430,6 +438,13 @@ func initSDL() {
 	}
 	context.renderer = renderer
 	context.renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
+
+	music, err := mix.LoadMUS("assets/Apero Hour.wav")
+	if err != nil {
+		panic(err)
+	}
+	music.FadeIn(999999, 1000)
+	mix.VolumeMusic(32)
 }
 
 func teardownSDL() {
@@ -440,6 +455,8 @@ func teardownSDL() {
 	context.window.Destroy()
 	context.renderer.Destroy()
 	img.Quit()
+	mix.CloseAudio()
+	mix.Quit()
 	sdl.Quit()
 	fmt.Println("Done")
 }

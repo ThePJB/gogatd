@@ -1,6 +1,8 @@
 package main
 
-import "github.com/veandco/go-sdl2/sdl"
+import (
+	"github.com/veandco/go-sdl2/sdl"
+)
 
 type TowerType int32
 
@@ -28,15 +30,17 @@ var damageNames = [...]string{
 }
 
 type TowerProperties struct {
-	name          string
-	cooldown      float64
-	texture       *sdl.Texture
-	attackType    AttackType
-	attackRange   float64
-	attackTexture *sdl.Texture
-	damage        float64
-	damageType    DamageType
-	cost          int
+	name            string
+	cooldown        float64
+	texture         *sdl.Texture
+	attackType      AttackType
+	attackRange     float64
+	attackTexture   *sdl.Texture
+	attackSound     ChunkID
+	attackLandSound ChunkID
+	damage          float64
+	damageType      DamageType
+	cost            int
 }
 
 var towerProperties []TowerProperties
@@ -51,6 +55,8 @@ func initTowerProps() {
 			ATTACK_BEAM,
 			200,
 			context.atlas[TEX_BEAM_WHITE],
+			CHUNK_FIRE_LAUNCH,
+			CHUNK_FIRE_LAUNCH,
 			4,
 			DAMAGE_CHEMICAL,
 			4,
@@ -62,6 +68,8 @@ func initTowerProps() {
 			ATTACK_BEAM,
 			200,
 			context.atlas[TEX_BEAM_LASER],
+			CHUNK_LASER,
+			CHUNK_LASER,
 			1,
 			DAMAGE_FIRE,
 			5,
@@ -73,6 +81,8 @@ func initTowerProps() {
 			ATTACK_PROJECTILE,
 			200,
 			context.atlas[TEX_PROJECTILE_FIRE],
+			CHUNK_FIRE_LAUNCH,
+			CHUNK_FIRE_EXPLODE,
 			9,
 			DAMAGE_FIRE,
 			10,
@@ -84,6 +94,8 @@ func initTowerProps() {
 			ATTACK_BEAM,
 			350,
 			context.atlas[TEX_BEAM_LIGHTNING],
+			CHUNK_LIGHTNING,
+			CHUNK_LIGHTNING,
 			8,
 			DAMAGE_LIGHTNING,
 			6,

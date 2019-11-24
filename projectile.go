@@ -20,7 +20,7 @@ var ProjectileSrcRect = sdl.Rect{0, 0, 100, 100}
 var ProjectileDeathSrcRect = sdl.Rect{100, 0, 100, 100}
 
 // right now they can all just look the same curve wise
-func makeProjectileAoE(start, end vec2f, texture *sdl.Texture, speed float64, radius float64, fromTower int) {
+func makeProjectileAoE(start, end vec2f, texture *sdl.Texture, speed float64, radius float64, fromTower int, sound ChunkID) {
 	tt := dist(start, end) / speed
 	// Travelling projectile
 	context.tweens = append(context.tweens, Tween{
@@ -56,6 +56,7 @@ func makeProjectileAoE(start, end vec2f, texture *sdl.Texture, speed float64, ra
 
 	// Game impact
 	context.events = append(context.events, Event{context.simTime + tt, func() {
+		context.chunks[sound].Play(-1, 0)
 		for k := range context.enemies {
 			if dist(context.enemies[k].position, end) < radius {
 				damage(fromTower, k) // dont think this is working, needs work anyway
