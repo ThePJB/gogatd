@@ -19,7 +19,7 @@ const (
 )
 
 const (
-	INTER_WAVE_TIME  = 5.0
+	INTER_WAVE_TIME  = 3.0
 	INTER_ENEMY_TIME = 1.0
 )
 
@@ -127,9 +127,7 @@ func main() {
 
 	context.stateChangeTimeAcc = 0
 	initSDL()
-	defer teardownSDL() // defer means we should tear down correctly in the event of a panic
-
-	// catch signals to ensure we tear down correctly if someone ctrl Cs
+	defer teardownSDL()
 
 	loadTextures()
 	loadChunks()
@@ -171,8 +169,6 @@ func main() {
 			}
 		}
 
-		//fmt.Println(context.stateChangeTimeAcc, context.state, len(context.enemies), len(context.parentGeneration))
-
 		// Game progression stuff:
 		context.stateChangeTimeAcc += dt
 		switch context.state {
@@ -184,7 +180,8 @@ func main() {
 				context.waveNumber += 1
 				context.enemyStrength += ENEMY_STRENGTH_PER_WAVE
 				waveAnnounce(context.waveNumber, context.simTime) // doesnt happen
-				context.stateChangeTimeAcc = 0                    // spawn enemy after delay
+				context.stateChangeTimeAcc = -2
+				context.chunks[CHUNK_WAVE].Play(-1, 0)
 				context.state = IN_WAVE
 			}
 		case IN_WAVE:
@@ -362,6 +359,9 @@ func main() {
 		}
 
 		// draw selected ui
+		//background
+		context.renderer.CopyEx(context.atlas[TEX_PATH], nil, &sdl.Rect{0, GAMEYRES, GAMEXRES, UIH}, 0, nil, sdl.FLIP_NONE)
+
 		// a stateful cursor thing would actually probably be quite good
 		if context.selectedEnemy != -1 {
 			drawSelectedEnemy()
@@ -380,6 +380,7 @@ func main() {
 		// if in tower place mode, draw
 		if context.placingTower != None {
 			indicateRange(HoverTile, towerProperties[context.placingTower].attackRange)
+			drawTowerInfo(context.placingTower)
 			//context.renderer.SetDrawColor(255, 255, 255, 64)
 			//context.renderer.FillRect(&sdl.Rect{0, 0, GAMEXRES, GAMEYRES})
 			//context.renderer.SetDrawColor(200, 200, 200, 255)
@@ -396,8 +397,16 @@ func main() {
 				context.renderer.CopyEx(towerProperties[context.placingTower].texture, nil, getTileRect(HoverTile), 0.0, nil, sdl.FLIP_NONE)
 				towerProperties[context.placingTower].texture.SetAlphaMod(255)
 			}
-
 		}
+
+		if context.selectedTower == -1 && context.selectedEnemy == -1 && context.placingTower == None {
+			// draw normal UI card
+			drawTowerBtn("q", TOWER_SKULL, 0, 0)
+			drawTowerBtn("w", TOWER_LASER, 1, 0)
+			drawTowerBtn("e", TOWER_FIRE, 2, 0)
+			drawTowerBtn("r", TOWER_LIGHTNING, 3, 0)
+		}
+
 		// draw some text
 		drawText(10, 10, fmt.Sprintf("%.0f FPS", 1/dt), 2)
 		drawText(10, 30, fmt.Sprintf("%d Lives", context.lives), 2)

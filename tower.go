@@ -8,10 +8,10 @@ type TowerType int32
 
 const (
 	None TowerType = iota
-	Skull
-	Laser
-	Fire
-	Lightning
+	TOWER_SKULL
+	TOWER_LASER
+	TOWER_FIRE
+	TOWER_LIGHTNING
 	NUM_TOWERS
 )
 

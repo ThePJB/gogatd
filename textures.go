@@ -20,6 +20,7 @@ const (
 
 	TEX_FONT
 	TEX_CASH
+	TEX_BTN
 
 	TEX_BAREND
 	TEX_BARGREEN
@@ -57,6 +58,7 @@ var TextureNames = [...]string{
 
 	"custombold",
 	"dolla",
+	"btnFrame",
 
 	"hpend",
 	"hpgreen",

@@ -30,7 +30,11 @@ func drawSelectedTower() {
 	cursorY := GAMEYRES + pad
 
 	props := towerProperties[t.towerType]
+
 	drawTower(t, selRect)
+	context.renderer.CopyEx(context.atlas[TEX_CASH], nil, &sdl.Rect{cursorX, cursorY, 20, 20}, 0, nil, sdl.FLIP_NONE)
+	drawText(cursorX+20+pad, cursorY, fmt.Sprintf("%d", props.cost), 2)
+	cursorY += textSize + pad
 	drawText(cursorX, cursorY, fmt.Sprintf("%.0f %s Damage", props.damage, damageNames[props.damageType]), 2)
 	cursorY += textSize + pad
 	drawText(cursorX, cursorY, fmt.Sprintf("%.0f range", props.attackRange), 2)
@@ -40,6 +44,28 @@ func drawSelectedTower() {
 	drawText(cursorX, cursorY, fmt.Sprintf("%d kills", t.kills), 2)
 	cursorY += textSize + pad
 	indicateRange(context.selectedTower, towerProperties[t.towerType].attackRange)
+}
+
+func drawTowerInfo(t TowerType) {
+	pad := int32(10)
+	var textSize int32 = 14
+	var selSize int32 = 200
+	selRect := &sdl.Rect{pad, GAMEYRES + pad, selSize, selSize}
+	cursorX := pad + selSize + pad
+	cursorY := GAMEYRES + pad
+
+	props := towerProperties[t]
+
+	context.renderer.CopyEx(towerProperties[t].texture, nil, selRect, 0.0, nil, sdl.FLIP_NONE)
+	context.renderer.CopyEx(context.atlas[TEX_CASH], nil, &sdl.Rect{cursorX, cursorY, 20, 20}, 0, nil, sdl.FLIP_NONE)
+	drawText(cursorX+20+pad, cursorY, fmt.Sprintf("%d", props.cost), 2)
+	cursorY += textSize + pad
+	drawText(cursorX, cursorY, fmt.Sprintf("%.0f %s Damage", props.damage, damageNames[props.damageType]), 2)
+	cursorY += textSize + pad
+	drawText(cursorX, cursorY, fmt.Sprintf("%.0f range", props.attackRange), 2)
+	cursorY += textSize + pad
+	drawText(cursorX, cursorY, fmt.Sprintf("%.2f second cooldown", props.cooldown), 2)
+	cursorY += textSize + pad
 }
 
 // place mode shows grid and ghost tower
@@ -60,6 +86,33 @@ func drawText(x, y int32, text string, scale int32) {
 		srcRect := sdl.Rect{sx * w, sy * h, w, h}
 		context.renderer.CopyEx(context.atlas[TEX_FONT], &srcRect, &destRect, 0.0, nil, sdl.FLIP_NONE)
 	}
+}
+
+const TOWERBTN_S = int32(80)
+const TOWERBTN_PAD = int32(10)
+
+// btn frame, if pressed rotate even
+func drawTowerBtn(hotkey string, t TowerType, x, y int32) {
+	px := TOWERBTN_PAD + x*(TOWERBTN_S+TOWERBTN_PAD)
+	py := TOWERBTN_PAD + y*(TOWERBTN_S+TOWERBTN_PAD) + GAMEYRES
+
+	dstrect := &sdl.Rect{px, py, TOWERBTN_S, TOWERBTN_S}
+
+	var col []uint8
+	switch towerProperties[t].damageType {
+	case DAMAGE_CHEMICAL:
+		col = []uint8{20, 200, 20, 255}
+	case DAMAGE_LIGHTNING:
+		col = []uint8{50, 50, 200, 255}
+	case DAMAGE_FIRE:
+		col = []uint8{200, 50, 0, 255}
+	}
+
+	context.renderer.SetDrawColorArray(col...)
+	context.renderer.FillRect(dstrect)
+	context.renderer.CopyEx(context.atlas[TextureID(t)+TEX_OFFSET_TOWERS-1], nil, dstrect, 0, nil, sdl.FLIP_NONE)
+	context.renderer.CopyEx(context.atlas[TEX_BTN], nil, dstrect, 0, nil, sdl.FLIP_NONE)
+	drawText(px+10, py+TOWERBTN_S-20, hotkey, 2)
 }
 
 func waveAnnounce(n int, t float64) {

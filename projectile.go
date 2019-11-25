@@ -58,6 +58,9 @@ func makeProjectileAoE(start, end vec2f, texture *sdl.Texture, speed float64, ra
 	context.events = append(context.events, Event{context.simTime + tt, func() {
 		context.chunks[sound].Play(-1, 0)
 		for k := range context.enemies {
+			if !context.enemies[k].alive {
+				continue
+			}
 			if dist(context.enemies[k].position, end) < radius {
 				damage(fromTower, k) // dont think this is working, needs work anyway
 			}
