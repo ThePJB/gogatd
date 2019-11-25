@@ -39,6 +39,7 @@ func drawSelectedTower() {
 	cursorY += textSize + pad
 	drawText(cursorX, cursorY, fmt.Sprintf("%d kills", t.kills), 2)
 	cursorY += textSize + pad
+	indicateRange(context.selectedTower, towerProperties[t.towerType].attackRange)
 }
 
 // place mode shows grid and ghost tower
@@ -93,4 +94,14 @@ func waveAnnounce(n int, t float64) {
 			context.atlas[TEX_FONT].SetAlphaMod(255)
 		},
 	})
+}
+
+// colour tiles and use opacity to indicate the cutoff point
+func indicateRange(aboutIdx int32, d float64) {
+	context.renderer.SetDrawColor(255, 255, 255, 128)
+	for i := range context.grid {
+		if dist(getTileCenter(aboutIdx), getTileCenter(int32(i))) <= d {
+			context.renderer.FillRect(getTileRect(int32(i)))
+		}
+	}
 }

@@ -318,7 +318,7 @@ func main() {
 							} else if props.attackType == ATTACK_PROJECTILE {
 								target := context.enemies[j].position
 								context.chunks[props.attackSound].Play(-1, 0)
-								makeProjectileAoE(getTileCenter(int32(i)), target, props.attackTexture, 600, 100, i, props.attackLandSound)
+								makeProjectileAoE(getTileCenter(int32(i)), target, props.attackTexture, 600, 80, i, props.attackLandSound)
 							}
 							context.grid[i].tower.cooldown = props.cooldown
 							// you would play a sound or something too
@@ -379,9 +379,10 @@ func main() {
 
 		// if in tower place mode, draw
 		if context.placingTower != None {
-			context.renderer.SetDrawColor(255, 255, 255, 64)
-			context.renderer.FillRect(&sdl.Rect{0, 0, GAMEXRES, GAMEYRES})
-			context.renderer.SetDrawColor(200, 200, 200, 255)
+			indicateRange(HoverTile, towerProperties[context.placingTower].attackRange)
+			//context.renderer.SetDrawColor(255, 255, 255, 64)
+			//context.renderer.FillRect(&sdl.Rect{0, 0, GAMEXRES, GAMEYRES})
+			//context.renderer.SetDrawColor(200, 200, 200, 255)
 			var i int32
 			for i = 0; i < GRIDW; i++ {
 				context.renderer.FillRect(&sdl.Rect{-1 + i*GAMEXRES/GRIDW, 0, 2, GAMEYRES})
