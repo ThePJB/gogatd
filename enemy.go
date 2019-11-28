@@ -96,20 +96,16 @@ func makeEnemy(points float64, c Chromosome) Enemy {
 	speed := 20 + points*c.speed*c.speed*2 // * some coefficient
 	hp := 10 + points*c.health*0.5
 
-	r0 := c.resistance[0]
-	r1 := c.resistance[1]
-	r2 := c.resistance[2]
-	r3 := c.resistance[3]
-
-	//r0 := logisticFunction(0.25 * points * c.resistance[0])
-	//r1 := logisticFunction(0.25 * points * c.resistance[1])
-	//r2 := logisticFunction(0.25 * points * c.resistance[2])
+	r0 := slowStop2(c.resistance[0]) * 1
+	r1 := slowStop2(c.resistance[1]) * 1
+	r2 := slowStop2(c.resistance[2]) * 1
+	r3 := slowStop2(c.resistance[3]) * 1
 
 	newEnemy := Enemy{
 		uid:       enemyUID,
 		enemyType: Slime,
-		w:         int32(math.Sqrt(200 * hp)),
-		h:         int32(math.Sqrt(200 * hp)),
+		w:         int32(30 * math.Pow(hp, 1.0/3.0)),
+		h:         int32(30 * math.Pow(hp, 1.0/3.0)),
 		animstage: 0,
 		animmax:   20 / speed,
 		speedBase: speed,

@@ -191,13 +191,13 @@ func initTowerProps() {
 				cooldown:    3,
 				bp:          BeamProperties{},
 				pp: ProjectileProperties{
-					speed:             100,
+					speed:             150,
 					area:              50,
 					lead:              true,
 					texture:           TEX_PROJECTILE_ROCK,
 					scale:             0.5,
 					flipInterval:      3, // 3 = no flip
-					rotationSpeed:     4 * math.Pi,
+					rotationSpeed:     6 * math.Pi,
 					deathTexture:      TEX_PROJECTILE_ROCK,
 					deathScale:        1.0,
 					deathSound:        CHUNK_FIRE_EXPLODE,

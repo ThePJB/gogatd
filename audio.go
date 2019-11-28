@@ -35,7 +35,7 @@ func loadChunks() {
 	for i := 0; i < int(NUM_CHUNKS); i++ {
 		context.chunks = append(context.chunks, loadWav("assets/"+chunkNames[i]+".wav"))
 	}
-	context.chunks[CHUNK_LASER].Volume(35)
+	context.chunks[CHUNK_LASER].Volume(25)
 	context.chunks[CHUNK_FIRE_LAUNCH].Volume(20)
 	context.chunks[CHUNK_FIRE_EXPLODE].Volume(40)
 	context.chunks[CHUNK_DIE].Volume(50)

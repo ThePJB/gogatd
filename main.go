@@ -375,9 +375,6 @@ func main() {
 		if context.placingTower != None {
 			indicateRange(HoverTile, towerProperties[context.placingTower].attack.dist)
 			drawTowerInfo(context.placingTower)
-			//context.renderer.SetDrawColor(255, 255, 255, 64)
-			//context.renderer.FillRect(&sdl.Rect{0, 0, GAMEXRES, GAMEYRES})
-			//context.renderer.SetDrawColor(200, 200, 200, 255)
 			var i int32
 			for i = 0; i < GRIDW; i++ {
 				context.renderer.FillRect(&sdl.Rect{-1 + i*GAMEXRES/GRIDW, 0, 2, GAMEYRES})
