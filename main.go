@@ -318,6 +318,10 @@ func main() {
 		// update
 		updateEnemies(dt)
 
+		sort.Slice(context.enemies, func(i, j int) bool {
+			return context.enemies[i].distance > context.enemies[j].distance
+		})
+
 		for i := range context.grid {
 			if context.grid[i].tower.towerType != None {
 				context.grid[i].tower.cooldown -= dt
