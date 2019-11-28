@@ -19,7 +19,6 @@ const (
 type Enemy struct {
 	enemyType EnemyType
 	position  vec2f
-	velocity  vec2f
 	distance  float64
 
 	w, h      int32
@@ -39,13 +38,6 @@ type Enemy struct {
 
 	chromosome      Chromosome
 	measuredFitness float64
-	fitness         FitnessMetric
-}
-
-type FitnessMetric struct {
-	damageReduced float64
-	distance      float64
-	madeToEnd     float64
 }
 
 // another thing is like the global score weights
@@ -61,14 +53,6 @@ type Chromosome struct {
 	resistance [4]float64 // idx off damageType
 	health     float64
 	regen      float64
-}
-
-func scoreFitness(f FitnessMetric) float64 {
-	//fmt.Println("f", f)
-	//fitness := f.damageReduced*FIT_RES_COEFF + f.distance*FIT_DISTANCE_COEFF + f.madeToEnd*FIT_END_COEFF + FIT_DISTANCE_AND_RES_COEFF*f.distance*f.damageReduced
-	//fmt.Println(fitness)
-	//10000 * fitness
-	return f.distance * FIT_DISTANCE_COEFF
 }
 
 func uniformChromosome() Chromosome {
@@ -129,7 +113,6 @@ func makeEnemy(points float64, c Chromosome) Enemy {
 		g:         1 - (r0+r2)/2,
 		b:         1 - (r0+r1)/2,
 		position:  getTileCenter(context.spawnidx),
-		velocity:  vecMulScalar(asF64(context.grid[context.spawnidx].pathDir), speed),
 		alive:     true,
 		hpmax:     hp,
 		hp:        hp,
@@ -137,7 +120,6 @@ func makeEnemy(points float64, c Chromosome) Enemy {
 
 		chromosome:      c,
 		measuredFitness: 0,
-		fitness:         FitnessMetric{},
 	}
 	return newEnemy
 }
@@ -170,26 +152,11 @@ func updateEnemies(dt float64) {
 			}
 		}
 
-		//context.enemies[i].position = vecAdd(enemy.position, vecMulScalar(enemy.velocity, dt))
-		context.enemies[i].fitness.distance += enemy.speedBase * dt
-
 		currentCell := context.grid[getTileFromPos(enemy.position)]
 		if currentCell.cellType == Orb {
 			context.lives--
-			context.enemies[i].fitness.madeToEnd = 1
 			killEnemy(i)
 			context.chunks[CHUNK_LEAK].Play(-1, 0)
-		} else {
-			/*
-				selectedTile := getTileFromPos(enemy.position)
-				towardsCenter := vecSub(getTileCenter(selectedTile), enemy.position)
-				x := cross2d(rot90(enemy.velocity.unit()), towardsCenter)
-
-				// only set this near the center of the tile
-				if x > -10.0 {
-					context.enemies[i].velocity = vecMulScalar(asF64(currentCell.pathDir), enemy.speedBase)
-				}
-			*/
 		}
 
 		// update animation
@@ -310,9 +277,8 @@ func damage(towerIdx int, enemyIdx int) {
 	amount := towerProperties[context.grid[towerIdx].tower.towerType].damage
 	damageType := towerProperties[context.grid[towerIdx].tower.towerType].damageType
 	damageAfterRes := amount * (1 - context.enemies[enemyIdx].res[damageType])
-	damageBlocked := amount * context.enemies[enemyIdx].res[damageType]
+	//damageBlocked := amount * context.enemies[enemyIdx].res[damageType]
 	context.enemies[enemyIdx].hp -= damageAfterRes
-	context.enemies[enemyIdx].fitness.damageReduced += damageBlocked / context.enemies[enemyIdx].hpmax // normalize to hp max or not? i reckon so
 
 	//fmt.Printf("Attack enemy with raw damage %.0f of type %s, enemy res to that is %.2f, so damage that gets through is %.1f\n", amount, damageNames[damageType], context.enemies[enemyIdx].res[damageType], damageAfterRes)
 

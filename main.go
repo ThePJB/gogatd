@@ -33,11 +33,7 @@ const (
 )
 
 const (
-	FIT_DISTANCE_COEFF         = 1.0 / (60.0 * 50.0)
-	FIT_RES_COEFF              = 0
-	FIT_END_COEFF              = 0
-	FIT_DISTANCE_AND_RES_COEFF = 0 / (60.0 * 50.0)
-	SELECTIVE_PRESSURE         = 0.5
+	SELECTIVE_PRESSURE = 0.5
 )
 
 const (
@@ -70,8 +66,7 @@ type Context struct {
 
 	lives int32
 
-	beams       []Beam
-	projectiles []Projectile
+	beams []Beam
 
 	selectedEnemy int
 	selectedTower int32
@@ -88,26 +83,6 @@ type Context struct {
 	placingTower TowerType
 	money        int
 }
-
-type Cell struct {
-	cellType CellType
-	tower    Tower
-	pathDir  [2]int32
-
-	// to come stuff about state like attack cooldown,
-	// ability cooldown etc
-}
-
-type CellType int32
-
-const (
-	Path CellType = iota
-	Buildable
-	Portal
-	Orb
-	Wall
-	WallTop
-)
 
 var context Context = Context{}
 
@@ -345,33 +320,8 @@ func main() {
 
 		for i := range context.grid {
 			if context.grid[i].tower.towerType != None {
-				props := towerProperties[context.grid[i].tower.towerType]
 				context.grid[i].tower.cooldown -= dt
-				if context.grid[i].tower.cooldown <= 0 {
-					// we can attack: look for targets
-					// at the oment just pick 1st enemy
-					for j := range context.enemies {
-						if !context.enemies[j].alive {
-							continue
-						}
-						if dist(context.enemies[j].position, getTileCenter(int32(i))) < props.attackRange {
-							// found an enemy
-							// probably factor into a damage function eventually that accounts for attack,res and handles death etc
-							if props.attackType == ATTACK_BEAM {
-								makeBeam(props.attackTexture, getTileCenter(int32(i)), context.enemies[j].position, 0.4)
-								context.chunks[props.attackSound].Play(-1, 0)
-								damage(i, j)
-							} else if props.attackType == ATTACK_PROJECTILE {
-								target := context.enemies[j].position
-								context.chunks[props.attackSound].Play(-1, 0)
-								makeProjectileAoE(getTileCenter(int32(i)), target, props.attackTexture, 600, 80, i, props.attackLandSound)
-							}
-							context.grid[i].tower.cooldown = props.cooldown
-							// you would play a sound or something too
-							break // could have multishot
-						}
-					}
-				}
+				tryAttack(i)
 			}
 		}
 
@@ -398,12 +348,6 @@ func main() {
 			if context.beams[i].timeRemaining > 0 {
 				context.beams[i].update(dt)
 				context.beams[i].draw()
-			}
-		}
-		for i := range context.projectiles {
-			if context.projectiles[i].timeRemaining > 0 {
-				context.projectiles[i].update(dt)
-				context.projectiles[i].draw()
 			}
 		}
 

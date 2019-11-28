@@ -83,7 +83,7 @@ func initTowerProps() {
 			"Fire Tower",
 			2.0,
 			context.atlas[TEX_TOWER_FIRE],
-			ATTACK_PROJECTILE,
+			ATTACK_PROJECTILE_AOE,
 			200,
 			context.atlas[TEX_PROJECTILE_FIRE],
 			CHUNK_FIRE_LAUNCH,
@@ -109,7 +109,7 @@ func initTowerProps() {
 			"Arrow Tower",
 			1,
 			context.atlas[TEX_TOWER_ARROW],
-			ATTACK_PROJECTILE,
+			ATTACK_PROJECTILE_ACCURATE,
 			250,
 			context.atlas[TEX_PROJECTILE_ARROW],
 			CHUNK_LIGHTNING,
@@ -122,7 +122,7 @@ func initTowerProps() {
 			"Blacksmith",
 			1.5,
 			context.atlas[TEX_TOWER_BLACKSMITH],
-			ATTACK_PROJECTILE,
+			ATTACK_PROJECTILE_AOE,
 			250,
 			context.atlas[TEX_PROJECTILE_HAMMER],
 			CHUNK_LIGHTNING,
@@ -135,7 +135,7 @@ func initTowerProps() {
 			"Trebuchet",
 			3,
 			context.atlas[TEX_TOWER_TREBUCHET],
-			ATTACK_PROJECTILE,
+			ATTACK_PROJECTILE_AOE,
 			500,
 			context.atlas[TEX_PROJECTILE_ROCK],
 			CHUNK_FIRE_LAUNCH,
@@ -147,13 +147,6 @@ func initTowerProps() {
 		TowerProperties{},
 	}
 }
-
-type AttackType int32
-
-const (
-	ATTACK_BEAM AttackType = iota
-	ATTACK_PROJECTILE
-)
 
 type Tower struct {
 	towerType TowerType

@@ -7,6 +7,22 @@ type PathSegment struct {
 	end   vec2f
 }
 
+type Cell struct {
+	cellType CellType
+	tower    Tower
+}
+
+type CellType int32
+
+const (
+	Path CellType = iota
+	Buildable
+	Portal
+	Orb
+	Wall
+	WallTop
+)
+
 var TOTAL_DISTANCE = 0
 
 func makeGrid() ([]Cell, int32, int32) {
@@ -61,6 +77,8 @@ func makeGrid() ([]Cell, int32, int32) {
 		panic("either portal or orb wasn't set")
 	}
 
+	visited := make([]bool, len(grid))
+
 	// It pathfinding time
 	// just do something greedy, start at one end and find the neighbour that hasnt already been found
 	currentIndex := int32(PortalIdx)
@@ -74,14 +92,9 @@ OUTER:
 			fmt.Println("inspecting", x, y)
 			if grid[n].cellType == Path || grid[n].cellType == Orb {
 				fmt.Println("found candidate")
-				if grid[n].pathDir[0] == 0 && grid[n].pathDir[1] == 0 {
-					gx := currentIndex % GRIDW
-					gy := currentIndex / GRIDW
-					nx := n % GRIDW
-					ny := n / GRIDW
+				if !visited[n] {
 					// wrong
-					grid[n].pathDir[0] = gx - nx
-					grid[n].pathDir[1] = gy - ny
+					visited[n] = true
 					start := getTileCenter(currentIndex)
 					currentIndex = n
 					end := getTileCenter(n)
