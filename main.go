@@ -72,6 +72,7 @@ type Context struct {
 	simTime float64
 	tweens  []Tween
 	events  []Event
+	paused  bool
 
 	waveNumber         int
 	enemyStrength      float64
@@ -110,7 +111,7 @@ func main() {
 	context.enemyStrength = 100
 	context.waveNumber = 0
 	context.state = 0
-
+	context.paused = false
 	context.money = 20
 
 	context.stateChangeTimeAcc = 0
@@ -147,88 +148,6 @@ func main() {
 		dt := tCurrentStart - tLastStart
 		if doffwd {
 			dt *= 5
-		}
-		context.simTime += dt
-
-		for i := range context.events {
-			if !context.events[i].done && context.simTime > context.events[i].when {
-				context.events[i].done = true
-				context.events[i].action()
-			}
-		}
-
-		// Game progression stuff:
-		context.stateChangeTimeAcc += dt
-		switch context.state {
-		case BETWEEN_WAVE:
-			// does nothing in this state
-
-			// transition:
-			if context.stateChangeTimeAcc > INTER_WAVE_TIME {
-				context.waveNumber += 1
-				context.enemyStrength += ENEMY_STRENGTH_PER_WAVE
-				waveAnnounce(context.waveNumber, context.simTime) // doesnt happen
-				context.stateChangeTimeAcc = -2
-				context.chunks[CHUNK_WAVE].Play(-1, 0)
-				context.state = IN_WAVE
-			}
-		case IN_WAVE:
-			// spawns enemy if timer < inter enemy time and number of enemies less than desired number
-			if len(context.enemies) < DESIRED_ENEMIES && context.stateChangeTimeAcc > INTER_ENEMY_TIME {
-				context.stateChangeTimeAcc = 0
-				context.enemies = append(context.enemies, makeEnemy(context.enemyStrength, doTournamentSelection().mutate()))
-			}
-
-			// check if all enemies are dead and done splatting (if I refactored splatting into a vfx it wouldnt be necessary to check here)
-			// also unselect any selection if enemy is removed
-			anyLivingEnemies := false
-			for i := range context.enemies {
-				if context.enemies[i].alive || context.enemies[i].splatTime > 0 {
-					anyLivingEnemies = true
-				}
-			}
-
-			if !anyLivingEnemies && len(context.enemies) == DESIRED_ENEMIES {
-				// initiate transition to next wave
-				fmt.Println("wave end")
-				// parent gen, enemies confused?
-
-				context.selectedEnemy = -1
-				context.parentGeneration = context.enemies
-
-				f, err := os.OpenFile("fit.log", os.O_CREATE|os.O_APPEND|os.O_RDONLY, 0600)
-				if err != nil {
-					fmt.Println("error writing fit log")
-				}
-				for i := range context.parentGeneration {
-					context.parentGeneration[i].measuredFitness = fitness(i)
-				}
-
-				fmt.Fprintf(f, "Wave %d pre sort:\t\t\t", context.waveNumber+1)
-				for i := range context.parentGeneration {
-					fmt.Fprintf(f, " %f ", fitness(i))
-				}
-				fmt.Fprintf(f, "\n")
-
-				sort.Slice(context.parentGeneration, func(a, b int) bool {
-					return context.parentGeneration[a].measuredFitness > context.parentGeneration[b].measuredFitness
-				})
-
-				fmt.Fprintf(f, "Wave %d post sort pre cull:\t", context.waveNumber+1)
-				for i := range context.parentGeneration {
-					fmt.Fprintf(f, " %f ", context.parentGeneration[i].measuredFitness)
-				}
-				fmt.Fprintf(f, "\n")
-				context.parentGeneration = context.parentGeneration[:int(float64(len(context.parentGeneration))*SELECTIVE_PRESSURE)]
-				fmt.Fprintf(f, "Wave %d post cull:\t\t\t", context.waveNumber+1)
-				for i := range context.parentGeneration {
-					fmt.Fprintf(f, " %f ", context.parentGeneration[i].measuredFitness)
-				}
-				fmt.Fprintf(f, "\n")
-				context.enemies = []Enemy{}
-				context.state = BETWEEN_WAVE
-				context.stateChangeTimeAcc = 0
-			}
 		}
 
 		// handle input
@@ -304,6 +223,9 @@ func main() {
 						}
 					}
 				}
+				if t.Keysym.Sym == sdl.K_SPACE && t.State == sdl.PRESSED {
+					context.paused = !context.paused
+				}
 			case *sdl.MouseMotionEvent:
 				CursorX = t.X
 				CursorY = t.Y
@@ -312,18 +234,102 @@ func main() {
 				HoverTile = TileY*context.gridw + TileX
 			}
 		}
+		if !context.paused {
+			context.simTime += dt
 
-		// update
-		updateEnemies(dt)
+			for i := range context.events {
+				if !context.events[i].done && context.simTime > context.events[i].when {
+					context.events[i].done = true
+					context.events[i].action()
+				}
+			}
 
-		sort.Slice(context.enemies, func(i, j int) bool {
-			return context.enemies[i].distance > context.enemies[j].distance
-		})
+			// Game progression stuff:
+			context.stateChangeTimeAcc += dt
+			switch context.state {
+			case BETWEEN_WAVE:
+				// does nothing in this state
 
-		for i := range context.grid {
-			if context.grid[i].tower.towerType != None {
-				context.grid[i].tower.cooldown -= dt
-				tryAttack(i)
+				// transition:
+				if context.stateChangeTimeAcc > INTER_WAVE_TIME {
+					context.waveNumber += 1
+					context.enemyStrength += ENEMY_STRENGTH_PER_WAVE
+					waveAnnounce(context.waveNumber, context.simTime) // doesnt happen
+					context.stateChangeTimeAcc = -2
+					context.chunks[CHUNK_WAVE].Play(-1, 0)
+					context.state = IN_WAVE
+				}
+			case IN_WAVE:
+				// spawns enemy if timer < inter enemy time and number of enemies less than desired number
+				if len(context.enemies) < DESIRED_ENEMIES && context.stateChangeTimeAcc > INTER_ENEMY_TIME {
+					context.stateChangeTimeAcc = 0
+					context.enemies = append(context.enemies, makeEnemy(context.enemyStrength, doTournamentSelection().mutate()))
+				}
+
+				// check if all enemies are dead and done splatting (if I refactored splatting into a vfx it wouldnt be necessary to check here)
+				// also unselect any selection if enemy is removed
+				anyLivingEnemies := false
+				for i := range context.enemies {
+					if context.enemies[i].alive || context.enemies[i].splatTime > 0 {
+						anyLivingEnemies = true
+					}
+				}
+
+				if !anyLivingEnemies && len(context.enemies) == DESIRED_ENEMIES {
+					// initiate transition to next wave
+					fmt.Println("wave end")
+					// parent gen, enemies confused?
+
+					context.selectedEnemy = -1
+					context.parentGeneration = context.enemies
+
+					f, err := os.OpenFile("fit.log", os.O_CREATE|os.O_APPEND|os.O_RDONLY, 0600)
+					if err != nil {
+						fmt.Println("error writing fit log")
+					}
+					for i := range context.parentGeneration {
+						context.parentGeneration[i].measuredFitness = fitness(i)
+					}
+
+					fmt.Fprintf(f, "Wave %d pre sort:\t\t\t", context.waveNumber+1)
+					for i := range context.parentGeneration {
+						fmt.Fprintf(f, " %f ", fitness(i))
+					}
+					fmt.Fprintf(f, "\n")
+
+					sort.Slice(context.parentGeneration, func(a, b int) bool {
+						return context.parentGeneration[a].measuredFitness > context.parentGeneration[b].measuredFitness
+					})
+
+					fmt.Fprintf(f, "Wave %d post sort pre cull:\t", context.waveNumber+1)
+					for i := range context.parentGeneration {
+						fmt.Fprintf(f, " %f ", context.parentGeneration[i].measuredFitness)
+					}
+					fmt.Fprintf(f, "\n")
+					context.parentGeneration = context.parentGeneration[:int(float64(len(context.parentGeneration))*SELECTIVE_PRESSURE)]
+					fmt.Fprintf(f, "Wave %d post cull:\t\t\t", context.waveNumber+1)
+					for i := range context.parentGeneration {
+						fmt.Fprintf(f, " %f ", context.parentGeneration[i].measuredFitness)
+					}
+					fmt.Fprintf(f, "\n")
+					context.enemies = []Enemy{}
+					context.state = BETWEEN_WAVE
+					context.stateChangeTimeAcc = 0
+				}
+			}
+
+			// update
+			updateEnemies(dt)
+
+			sort.Slice(context.enemies, func(i, j int) bool {
+				return context.enemies[i].distance > context.enemies[j].distance
+			})
+
+			for i := range context.grid {
+				if context.grid[i].tower.towerType != None {
+					context.grid[i].tower.cooldown -= dt
+					tryAttack(i)
+				}
 			}
 		}
 
@@ -397,6 +403,19 @@ func main() {
 			drawTowerBtn("t", TOWER_ARROW, 4, 0)
 			drawTowerBtn("y", TOWER_BLACKSMITH, 5, 0)
 			drawTowerBtn("u", TOWER_TREBUCHET, 6, 0)
+		}
+
+		if context.paused {
+			context.renderer.SetDrawColor(200, 200, 150, 80)
+			context.renderer.FillRect(&sdl.Rect{0, 0, GAMEXRES, GAMEYRES})
+			w := int32(7)
+			scale := int32(8)
+			s := "paused"
+			est_w := int32(len(s)) * w * scale
+			y := int32(500)
+			drawText(GAMEXRES/2-est_w/2, y, s, scale)
+			drawText(70, y+w*scale+20, "space to pause/unpause", 2)
+			drawText(70, y+w*scale+w*2+20+10, "] to fast forward", 2)
 		}
 
 		// draw some text
