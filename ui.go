@@ -58,13 +58,23 @@ func drawTowerInfo(t TowerType) {
 	props := towerProperties[t]
 
 	context.renderer.CopyEx(context.atlas[towerProperties[t].texture], nil, selRect, 0.0, nil, sdl.FLIP_NONE)
+
+	drawText(cursorX, cursorY, fmt.Sprintf("%s", props.name), 2)
+	cursorY += textSize + pad
+
+	drawText(cursorX, cursorY, fmt.Sprintf("%s", props.tooltip), 2)
+	cursorY += textSize + pad
+
 	context.renderer.CopyEx(context.atlas[TEX_CASH], nil, &sdl.Rect{cursorX, cursorY, 20, 20}, 0, nil, sdl.FLIP_NONE)
 	drawText(cursorX+20+pad, cursorY, fmt.Sprintf("%d", props.cost), 2)
 	cursorY += textSize + pad
+
 	drawText(cursorX, cursorY, fmt.Sprintf("%.0f %s Damage", props.attack.damage, damageNames[props.attack.damageType]), 2)
 	cursorY += textSize + pad
+
 	drawText(cursorX, cursorY, fmt.Sprintf("%.0f range", props.attack.dist), 2)
 	cursorY += textSize + pad
+
 	drawText(cursorX, cursorY, fmt.Sprintf("%.2f second cooldown", props.attack.cooldown), 2)
 	cursorY += textSize + pad
 }

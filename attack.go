@@ -59,6 +59,25 @@ func tryAttack(i int) {
 			if dist(start, end) < props.dist {
 				context.chunks[props.attackSound].Play(-1, 0)
 				if props.attackType == ATTACK_BEAM {
+					//startX := int32(start[0] + 0.5*(end[0]-start[0]))
+					//startY := int32(start[1] + 0.5*(end[1]-start[1]))
+					toRect := &sdl.Rect{int32(start[0]), int32(start[1]), int32(dist(start, end)), props.bp.width}
+
+					tex := context.atlas[props.bp.texture]
+					beamAngle := angle(start, end)
+					_, _, _, height, err := tex.Query()
+					if err != nil {
+						panic(err)
+					}
+					centerOfRotation := &sdl.Point{0, height / 2}
+
+					context.tweens = append(context.tweens, Tween{
+						context.simTime, context.simTime + props.bp.fadeTime, func(t float64) {
+							tex.SetAlphaMod(uint8(255 * slowStop2(1-t)))
+							context.renderer.CopyEx(tex, nil, toRect, RAD_TO_DEG*beamAngle, centerOfRotation, sdl.FLIP_NONE)
+							tex.SetAlphaMod(uint8(255))
+						},
+					})
 					//makeBeam(props.BeamProperties, getTileCenter(int32(i)), context.enemies[j].position, 0.4)
 					context.chunks[props.attackSound].Play(-1, 0)
 					damage(i, j)
@@ -72,7 +91,6 @@ func tryAttack(i int) {
 					makeProjectile(start, end, props, i, context.enemies[j].uid)
 				}
 				context.grid[i].tower.cooldown = props.cooldown
-				// you would play a sound or something too
 				break // could have multishot
 			}
 		}
@@ -98,7 +116,7 @@ func makeProjectile(start, end vec2f, attack Attack, fromTower int, toEnemyUID i
 				int32(start[1] + (end[1]-start[1])*(t) - (50 * attack.pp.scale)),
 				int32(100.0 * attack.pp.scale),
 				int32(100.0 * attack.pp.scale)}
-			context.renderer.CopyEx(context.atlas[attack.pp.texture], &ProjectileSrcRect, toRect, RAD_TO_DEG*angle+t*attack.pp.rotationSpeed, nil, flip)
+			context.renderer.CopyEx(context.atlas[attack.pp.texture], &ProjectileSrcRect, toRect, RAD_TO_DEG*(angle+t*attack.pp.rotationSpeed), nil, flip)
 		}})
 
 	// After explodey projectile
@@ -139,64 +157,4 @@ func makeProjectile(start, end vec2f, attack Attack, fromTower int, toEnemyUID i
 		}
 
 	}, false})
-}
-
-/*
-could expose fade as a parameter
-make it look less shit one day
-*/
-
-type Beam struct {
-	texture       *sdl.Texture
-	start, end    vec2f
-	lifetime      float64
-	timeRemaining float64
-}
-
-func makeBeam(texture *sdl.Texture, start, end vec2f, lifetime float64) {
-	context.beams = append(context.beams, Beam{texture, start, end, lifetime, lifetime})
-}
-
-func (b *Beam) update(dt float64) {
-	// dec and remove
-	b.timeRemaining -= dt
-}
-
-// width should really = height
-func (b Beam) draw() {
-	_, _, width, height, err := b.texture.Query()
-	if err != nil {
-		panic(err)
-	}
-	angle := angle(b.start, b.end)
-	length := dist(b.start, b.end)
-	nCopies := length / float64(width)
-	var i int32 = 0
-	alpha := b.timeRemaining / b.lifetime
-	b.texture.SetAlphaMod(uint8(255 * alpha))
-	for i = 0; i < int32(nCopies); i++ {
-		// probably require offset
-		toRect := &sdl.Rect{
-			int32(b.start[0] + float64(i*width)*math.Cos(angle)),
-			int32(b.start[1] + float64(i*width)*math.Sin(angle)),
-			width,
-			height,
-		}
-		context.renderer.CopyEx(b.texture, nil, toRect, RAD_TO_DEG*angle, nil, sdl.FLIP_NONE)
-	}
-	b.texture.SetAlphaMod(255)
-	/*
-		// this will probably be fucked but lets just see
-		// expecting the last one to be cooked and stretched or anything
-		remainingw := int32(nCopies - float64(int(nCopies))*float64(width))
-
-		toRect := &sdl.Rect{
-			int32(b.start[0] + float64(nCopies*float64(width))*math.Cos(angle)),
-			int32(b.start[1] + float64(nCopies*float64(width))*math.Sin(angle)),
-			remainingw,
-			height,
-		}
-		context.renderer.CopyEx(b.texture, nil, toRect, DEG_TO_RAD*angle, nil, sdl.FLIP_NONE)
-	*/
-	// draw
 }

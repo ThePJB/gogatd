@@ -66,8 +66,6 @@ type Context struct {
 
 	lives int32
 
-	beams []Beam
-
 	selectedEnemy int
 	selectedTower int32
 
@@ -347,13 +345,6 @@ func main() {
 		}
 		// draw enemies
 		drawEnemies()
-
-		for i := range context.beams {
-			if context.beams[i].timeRemaining > 0 {
-				context.beams[i].update(dt)
-				context.beams[i].draw()
-			}
-		}
 
 		// draw selected ui
 		//background

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"math"
+
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -48,7 +50,6 @@ func initTowerProps() {
 	towerProperties = []TowerProperties{
 		TowerProperties{},
 		TowerProperties{},
-		TowerProperties{},
 		/*
 			TowerProperties{
 				"Skull Tower",
@@ -78,6 +79,26 @@ func initTowerProps() {
 			},
 		*/
 		TowerProperties{
+			name:    "Laser Tower",
+			tooltip: "Rapid fire fire tower",
+			texture: TEX_TOWER_LASER,
+			cost:    5,
+			attack: Attack{
+				attackType:  ATTACK_BEAM,
+				attackSound: CHUNK_LASER,
+				damage:      1,
+				damageType:  DAMAGE_FIRE,
+				dist:        200,
+				cooldown:    0.25,
+				bp: BeamProperties{
+					texture:  TEX_BEAM_LASER,
+					fadeTime: 0.5,
+					width:    6,
+				},
+				pp: ProjectileProperties{},
+			},
+		},
+		TowerProperties{
 			name:    "Fire Tower",
 			tooltip: "Nasty AoE damage fire tower",
 			texture: TEX_TOWER_FIRE,
@@ -95,11 +116,11 @@ func initTowerProps() {
 					area:              100,
 					lead:              false,
 					texture:           TEX_PROJECTILE_FIRE,
-					scale:             1.0,
+					scale:             0.8,
 					flipInterval:      0.2,
 					rotationSpeed:     0,
 					deathTexture:      TEX_PROJECTILE_FIRE,
-					deathScale:        1.0,
+					deathScale:        0.9,
 					deathSound:        CHUNK_FIRE_EXPLODE,
 					deathFlipInterval: 0.2,
 				},
@@ -108,7 +129,34 @@ func initTowerProps() {
 		TowerProperties{},
 		TowerProperties{},
 		TowerProperties{},
-		TowerProperties{},
+		TowerProperties{
+			name:    "Trebuchet",
+			tooltip: "Long range physical AoE tower",
+			texture: TEX_TOWER_TREBUCHET,
+			cost:    30,
+			attack: Attack{
+				attackType:  ATTACK_PROJECTILE,
+				attackSound: CHUNK_FIRE_LAUNCH,
+				damage:      16,
+				damageType:  DAMAGE_PHYSICAL,
+				dist:        350,
+				cooldown:    3,
+				bp:          BeamProperties{},
+				pp: ProjectileProperties{
+					speed:             100,
+					area:              50,
+					lead:              true,
+					texture:           TEX_PROJECTILE_ROCK,
+					scale:             0.5,
+					flipInterval:      3, // 3 = no flip
+					rotationSpeed:     4 * math.Pi,
+					deathTexture:      TEX_PROJECTILE_ROCK,
+					deathScale:        1.0,
+					deathSound:        CHUNK_FIRE_EXPLODE,
+					deathFlipInterval: 0.2,
+				},
+			},
+		},
 		/*
 			TowerProperties{
 				"Lightning Tower",
