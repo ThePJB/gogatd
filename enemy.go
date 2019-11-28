@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 
@@ -17,6 +18,7 @@ const (
 )
 
 type Enemy struct {
+	uid       int
 	enemyType EnemyType
 	position  vec2f
 	distance  float64
@@ -39,6 +41,8 @@ type Enemy struct {
 	chromosome      Chromosome
 	measuredFitness float64
 }
+
+var enemyUID = 0
 
 // another thing is like the global score weights
 // how does normalizing it work, it needs to be fair
@@ -102,6 +106,7 @@ func makeEnemy(points float64, c Chromosome) Enemy {
 	//r2 := logisticFunction(0.25 * points * c.resistance[2])
 
 	newEnemy := Enemy{
+		uid:       enemyUID,
 		enemyType: Slime,
 		w:         int32(math.Sqrt(200 * hp)),
 		h:         int32(math.Sqrt(200 * hp)),
@@ -121,6 +126,7 @@ func makeEnemy(points float64, c Chromosome) Enemy {
 		chromosome:      c,
 		measuredFitness: 0,
 	}
+	enemyUID += 1
 	return newEnemy
 }
 
@@ -142,15 +148,7 @@ func updateEnemies(dt float64) {
 
 		// move
 		context.enemies[i].distance += enemy.speedBase * dt
-		d := context.enemies[i].distance
-		for j := range context.path {
-			d -= float64(GRID_SZ_X)
-			if d <= float64(GRID_SZ_X) {
-				// we belong to this segment
-				context.enemies[i].position = interp(context.path[j].start, context.path[j].end, d/float64(GRID_SZ_X))
-				break
-			}
-		}
+		context.enemies[i].position = pathPos(context.enemies[i].distance)
 
 		currentCell := context.grid[getTileFromPos(enemy.position)]
 		if currentCell.cellType == Orb {
@@ -274,8 +272,8 @@ func (c Chromosome) mutate() Chromosome {
 
 // tower enemy, careful, its bad api design lol
 func damage(towerIdx int, enemyIdx int) {
-	amount := towerProperties[context.grid[towerIdx].tower.towerType].damage
-	damageType := towerProperties[context.grid[towerIdx].tower.towerType].damageType
+	amount := towerProperties[context.grid[towerIdx].tower.towerType].attack.damage
+	damageType := towerProperties[context.grid[towerIdx].tower.towerType].attack.damageType
 	damageAfterRes := amount * (1 - context.enemies[enemyIdx].res[damageType])
 	//damageBlocked := amount * context.enemies[enemyIdx].res[damageType]
 	context.enemies[enemyIdx].hp -= damageAfterRes
@@ -298,4 +296,16 @@ func fitness(idx int) float64 {
 		fit += context.parentGeneration[idx].distance - context.parentGeneration[idx+1].distance
 	}
 	return fit
+}
+
+func pathPos(d float64) vec2f {
+	for j := range context.path {
+		d -= float64(GRID_SZ_X)
+		if d <= float64(GRID_SZ_X) {
+			// we belong to this segment
+			return interp(context.path[j].start, context.path[j].end, d/float64(GRID_SZ_X))
+		}
+	}
+	fmt.Println("bad pathpos, might have gone off the end")
+	return vec2f{0, 0}
 }

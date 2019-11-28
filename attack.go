@@ -10,8 +10,7 @@ type AttackType int32
 
 const (
 	ATTACK_BEAM AttackType = iota
-	ATTACK_PROJECTILE_AOE
-	ATTACK_PROJECTILE_ACCURATE
+	ATTACK_PROJECTILE
 )
 
 type Attack struct {
@@ -20,9 +19,10 @@ type Attack struct {
 	bp          BeamProperties
 	pp          ProjectileProperties
 
-	damage   float64
-	dist     float64
-	cooldown float64
+	damage     float64
+	damageType DamageType
+	dist       float64
+	cooldown   float64
 }
 
 type BeamProperties struct {
@@ -42,32 +42,34 @@ type ProjectileProperties struct {
 	rotationSpeed float64
 
 	deathTexture      TextureID
+	deathScale        float64
 	deathSound        ChunkID
-	deathFade         float64
 	deathFlipInterval float64
 }
 
-// make it attack the furthest forward, that would be less annoying
 func tryAttack(i int) {
-	props := towerProperties[context.grid[i].tower.towerType]
+	props := towerProperties[context.grid[i].tower.towerType].attack
 	if context.grid[i].tower.cooldown <= 0 {
-		// we can attack: look for targets
-		// at the oment just pick 1st enemy
 		for j := range context.enemies {
 			if !context.enemies[j].alive {
 				continue
 			}
-			if dist(context.enemies[j].position, getTileCenter(int32(i))) < props.attackRange {
-				// found an enemy
-				// probably factor into a damage function eventually that accounts for attack,res and handles death etc
+			start := getTileCenter(int32(i))
+			end := context.enemies[j].position
+			if dist(start, end) < props.dist {
+				context.chunks[props.attackSound].Play(-1, 0)
 				if props.attackType == ATTACK_BEAM {
-					makeBeam(props.attackTexture, getTileCenter(int32(i)), context.enemies[j].position, 0.4)
+					//makeBeam(props.BeamProperties, getTileCenter(int32(i)), context.enemies[j].position, 0.4)
 					context.chunks[props.attackSound].Play(-1, 0)
 					damage(i, j)
-				} else if props.attackType == ATTACK_PROJECTILE_AOE {
-					target := context.enemies[j].position
-					context.chunks[props.attackSound].Play(-1, 0)
-					makeProjectileAoE(getTileCenter(int32(i)), target, props.attackTexture, 600, 80, i, props.attackLandSound)
+				} else if props.attackType == ATTACK_PROJECTILE {
+					tt := dist(start, end) / props.pp.speed
+					if props.pp.lead {
+						// calculate where enemy will be
+						d := context.enemies[j].distance + context.enemies[j].speedBase*tt
+						end = pathPos(d)
+					}
+					makeProjectile(start, end, props, i, context.enemies[j].uid)
 				}
 				context.grid[i].tower.cooldown = props.cooldown
 				// you would play a sound or something too
@@ -81,49 +83,58 @@ var ProjectileSrcRect = sdl.Rect{0, 0, 100, 100}
 var ProjectileDeathSrcRect = sdl.Rect{100, 0, 100, 100}
 
 // right now they can all just look the same curve wise
-func makeProjectileAoE(start, end vec2f, texture *sdl.Texture, speed float64, radius float64, fromTower int, sound ChunkID) {
-	tt := dist(start, end) / speed
+func makeProjectile(start, end vec2f, attack Attack, fromTower int, toEnemyUID int) {
+	//texture *sdl.Texture, speed float64, radius float64, fromTower int, sound ChunkID) {
+	tt := dist(start, end) / attack.pp.speed
 	// Travelling projectile
 	context.tweens = append(context.tweens, Tween{
 		context.simTime, context.simTime + tt, func(t float64) {
 			flip := sdl.FLIP_NONE
-			if int(t*5)%2 == 0 {
+			if math.Mod(t, 2*attack.pp.flipInterval) > attack.pp.flipInterval {
 				flip = sdl.FLIP_VERTICAL
 			}
 			angle := angle(start, end)
-			toRect := &sdl.Rect{int32(start[0] + (end[0]-start[0])*(t) - 50),
-				int32(start[1] + (end[1]-start[1])*(t) - 50),
-				100,
-				100}
-			context.renderer.CopyEx(texture, &ProjectileSrcRect, toRect, RAD_TO_DEG*angle, nil, flip)
+			toRect := &sdl.Rect{int32(start[0] + (end[0]-start[0])*(t) - (50 * attack.pp.scale)),
+				int32(start[1] + (end[1]-start[1])*(t) - (50 * attack.pp.scale)),
+				int32(100.0 * attack.pp.scale),
+				int32(100.0 * attack.pp.scale)}
+			context.renderer.CopyEx(context.atlas[attack.pp.texture], &ProjectileSrcRect, toRect, RAD_TO_DEG*angle+t*attack.pp.rotationSpeed, nil, flip)
 		}})
 
 	// After explodey projectile
 	context.tweens = append(context.tweens, Tween{
 		context.simTime + tt, context.simTime + tt + 0.4, func(t float64) {
 			flip := sdl.FLIP_NONE
-			if int(t*5)%2 == 0 {
-				flip = sdl.FLIP_HORIZONTAL
+			if math.Mod(t, 2*attack.pp.deathFlipInterval) > attack.pp.flipInterval {
+				flip = sdl.FLIP_VERTICAL
 			}
 			angle := angle(start, end)
-			toRect := &sdl.Rect{int32(end[0] - 50),
-				int32(end[1] - 50),
-				100,
-				100}
-			texture.SetAlphaMod(uint8(255 * slowStop2(1-t)))
-			context.renderer.CopyEx(texture, &ProjectileDeathSrcRect, toRect, RAD_TO_DEG*angle, nil, flip)
-			texture.SetAlphaMod(uint8(255))
+			toRect := &sdl.Rect{int32(end[0] - 50*attack.pp.deathScale),
+				int32(end[1] - 50*attack.pp.deathScale),
+				int32(100.0 * attack.pp.deathScale),
+				int32(100.0 * attack.pp.deathScale)}
+			tex := context.atlas[attack.pp.deathTexture]
+			tex.SetAlphaMod(uint8(255 * slowStop2(1-t)))
+			context.renderer.CopyEx(tex, &ProjectileDeathSrcRect, toRect, RAD_TO_DEG*angle, nil, flip)
+			tex.SetAlphaMod(uint8(255))
 		}})
 
 	// Game impact
 	context.events = append(context.events, Event{context.simTime + tt, func() {
-		context.chunks[sound].Play(-1, 0)
+		context.chunks[attack.pp.deathSound].Play(-1, 0)
 		for k := range context.enemies {
 			if !context.enemies[k].alive {
 				continue
 			}
-			if dist(context.enemies[k].position, end) < radius {
-				damage(fromTower, k) // dont think this is working, needs work anyway
+			if attack.pp.area == 0 {
+				if context.enemies[k].uid == toEnemyUID {
+					damage(fromTower, k)
+					break
+				}
+			} else {
+			}
+			if dist(context.enemies[k].position, end) < attack.pp.area {
+				damage(fromTower, k)
 			}
 		}
 

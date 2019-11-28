@@ -376,7 +376,7 @@ func main() {
 
 		// if in tower place mode, draw
 		if context.placingTower != None {
-			indicateRange(HoverTile, towerProperties[context.placingTower].attackRange)
+			indicateRange(HoverTile, towerProperties[context.placingTower].attack.dist)
 			drawTowerInfo(context.placingTower)
 			//context.renderer.SetDrawColor(255, 255, 255, 64)
 			//context.renderer.FillRect(&sdl.Rect{0, 0, GAMEXRES, GAMEYRES})
@@ -390,9 +390,10 @@ func main() {
 			}
 			// draw ghost tower
 			if CursorY < GAMEYRES && CursorX < GAMEXRES {
-				towerProperties[context.placingTower].texture.SetAlphaMod(128)
-				context.renderer.CopyEx(towerProperties[context.placingTower].texture, nil, getTileRect(HoverTile), 0.0, nil, sdl.FLIP_NONE)
-				towerProperties[context.placingTower].texture.SetAlphaMod(255)
+				t := context.atlas[towerProperties[context.placingTower].texture]
+				t.SetAlphaMod(128)
+				context.renderer.CopyEx(t, nil, getTileRect(HoverTile), 0.0, nil, sdl.FLIP_NONE)
+				t.SetAlphaMod(255)
 			}
 		}
 

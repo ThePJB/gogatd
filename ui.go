@@ -36,15 +36,15 @@ func drawSelectedTower() {
 	context.renderer.CopyEx(context.atlas[TEX_CASH], nil, &sdl.Rect{cursorX, cursorY, 20, 20}, 0, nil, sdl.FLIP_NONE)
 	drawText(cursorX+20+pad, cursorY, fmt.Sprintf("%d", props.cost), 2)
 	cursorY += textSize + pad
-	drawText(cursorX, cursorY, fmt.Sprintf("%.0f %s Damage", props.damage, damageNames[props.damageType]), 2)
+	drawText(cursorX, cursorY, fmt.Sprintf("%.0f %s Damage", props.attack.damage, damageNames[props.attack.damageType]), 2)
 	cursorY += textSize + pad
-	drawText(cursorX, cursorY, fmt.Sprintf("%.0f range", props.attackRange), 2)
+	drawText(cursorX, cursorY, fmt.Sprintf("%.0f range", props.attack.dist), 2)
 	cursorY += textSize + pad
-	drawText(cursorX, cursorY, fmt.Sprintf("%.2f second cooldown", props.cooldown), 2)
+	drawText(cursorX, cursorY, fmt.Sprintf("%.2f second cooldown", props.attack.cooldown), 2)
 	cursorY += textSize + pad
 	drawText(cursorX, cursorY, fmt.Sprintf("%d kills", t.kills), 2)
 	cursorY += textSize + pad
-	indicateRange(context.selectedTower, towerProperties[t.towerType].attackRange)
+	indicateRange(context.selectedTower, props.attack.dist)
 }
 
 func drawTowerInfo(t TowerType) {
@@ -57,15 +57,15 @@ func drawTowerInfo(t TowerType) {
 
 	props := towerProperties[t]
 
-	context.renderer.CopyEx(towerProperties[t].texture, nil, selRect, 0.0, nil, sdl.FLIP_NONE)
+	context.renderer.CopyEx(context.atlas[towerProperties[t].texture], nil, selRect, 0.0, nil, sdl.FLIP_NONE)
 	context.renderer.CopyEx(context.atlas[TEX_CASH], nil, &sdl.Rect{cursorX, cursorY, 20, 20}, 0, nil, sdl.FLIP_NONE)
 	drawText(cursorX+20+pad, cursorY, fmt.Sprintf("%d", props.cost), 2)
 	cursorY += textSize + pad
-	drawText(cursorX, cursorY, fmt.Sprintf("%.0f %s Damage", props.damage, damageNames[props.damageType]), 2)
+	drawText(cursorX, cursorY, fmt.Sprintf("%.0f %s Damage", props.attack.damage, damageNames[props.attack.damageType]), 2)
 	cursorY += textSize + pad
-	drawText(cursorX, cursorY, fmt.Sprintf("%.0f range", props.attackRange), 2)
+	drawText(cursorX, cursorY, fmt.Sprintf("%.0f range", props.attack.dist), 2)
 	cursorY += textSize + pad
-	drawText(cursorX, cursorY, fmt.Sprintf("%.2f second cooldown", props.cooldown), 2)
+	drawText(cursorX, cursorY, fmt.Sprintf("%.2f second cooldown", props.attack.cooldown), 2)
 	cursorY += textSize + pad
 }
 
@@ -100,7 +100,7 @@ func drawTowerBtn(hotkey string, t TowerType, x, y int32) {
 	dstrect := &sdl.Rect{px, py, TOWERBTN_S, TOWERBTN_S}
 
 	var col []uint8
-	switch towerProperties[t].damageType {
+	switch towerProperties[t].attack.damageType {
 	case DAMAGE_CHEMICAL:
 		col = []uint8{20, 200, 20, 255}
 	case DAMAGE_LIGHTNING:
