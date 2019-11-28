@@ -13,11 +13,12 @@ func drawSelectedEnemy() {
 	selRect := &sdl.Rect{pad, GAMEYRES + pad, selSize, selSize}
 	drawEnemyToRect(context.selectedEnemy, selRect)
 	e := context.enemies[context.selectedEnemy]
-	drawText(pad+selSize+pad, GAMEYRES+pad, fmt.Sprintf("%.0f/%.0f HP", e.hp, e.hpmax), 2)
+	drawText(pad+selSize+pad, GAMEYRES+pad, fmt.Sprintf("%.0f/%.0f HP + %.2f HP/S", e.hp, e.hpmax, e.regen), 2)
 	drawText(pad+selSize+pad, GAMEYRES+pad+1*textSize+1*pad, fmt.Sprintf("%.0f%% Fire Resist", 100*e.res[DAMAGE_FIRE]), 2)
 	drawText(pad+selSize+pad, GAMEYRES+pad+2*textSize+2*pad, fmt.Sprintf("%.0f%% Chem Resist", 100*e.res[DAMAGE_CHEMICAL]), 2)
 	drawText(pad+selSize+pad, GAMEYRES+pad+3*textSize+3*pad, fmt.Sprintf("%.0f%% Lightning Resist", 100*e.res[DAMAGE_LIGHTNING]), 2)
-	drawText(pad+selSize+pad, GAMEYRES+pad+4*textSize+4*pad, fmt.Sprintf("%.0f px/s Speed", e.speedBase), 2)
+	drawText(pad+selSize+pad, GAMEYRES+pad+4*textSize+4*pad, fmt.Sprintf("%.0f%% Physical Resist", 100*e.res[DAMAGE_PHYSICAL]), 2)
+	drawText(pad+selSize+pad, GAMEYRES+pad+5*textSize+5*pad, fmt.Sprintf("%.0f px/s Speed", e.speedBase), 2)
 }
 
 func drawSelectedTower() {
@@ -106,6 +107,8 @@ func drawTowerBtn(hotkey string, t TowerType, x, y int32) {
 		col = []uint8{50, 50, 200, 255}
 	case DAMAGE_FIRE:
 		col = []uint8{200, 50, 0, 255}
+	case DAMAGE_PHYSICAL:
+		col = []uint8{200, 200, 200, 255}
 	}
 
 	context.renderer.SetDrawColorArray(col...)

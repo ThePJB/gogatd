@@ -34,8 +34,14 @@ const (
 	TEX_TOWER_LASER
 	TEX_TOWER_FIRE
 	TEX_TOWER_LIGHTNING
+	TEX_TOWER_ARROW
+	TEX_TOWER_BLACKSMITH
+	TEX_TOWER_TREBUCHET
 
 	TEX_PROJECTILE_FIRE
+	TEX_PROJECTILE_ARROW
+	TEX_PROJECTILE_HAMMER
+	TEX_PROJECTILE_ROCK
 
 	NUM_TEXTURES
 )
@@ -72,8 +78,14 @@ var TextureNames = [...]string{
 	"laserTower",
 	"flametower",
 	"lightningTower",
+	"arrowTower",
+	"blacksmith",
+	"trebuchetTower",
 
 	"flameProjectile",
+	"arrowProjectile",
+	"hammerProjectile",
+	"rockProjectile",
 }
 
 func loadTextures() {

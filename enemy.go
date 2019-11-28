@@ -11,12 +11,6 @@ type EnemyType int32
 
 // fitness coeffs
 // normalize == tile px (60) * num tiles (50?)
-const (
-	FIT_DISTANCE_COEFF         = 1 / (60 * 50)
-	FIT_RES_COEFF              = 0
-	FIT_END_COEFF              = 1
-	FIT_DISTANCE_AND_RES_COEFF = 0 / (60 * 50)
-)
 
 const (
 	Slime EnemyType = 0
@@ -26,13 +20,14 @@ type Enemy struct {
 	enemyType EnemyType
 	position  vec2f
 	velocity  vec2f
+	distance  float64
 
 	w, h      int32
 	animstage float64
 	animmax   float64
 	speedBase float64 // pixels per second
 
-	res [3]float64
+	res [4]float64
 
 	r, g, b float64
 
@@ -40,9 +35,11 @@ type Enemy struct {
 	splatTime float64
 	hpmax     float64
 	hp        float64
+	regen     float64
 
-	chromosome Chromosome
-	fitness    FitnessMetric
+	chromosome      Chromosome
+	measuredFitness float64
+	fitness         FitnessMetric
 }
 
 type FitnessMetric struct {
@@ -61,35 +58,44 @@ type FitnessMetric struct {
 // 0-1 weights
 type Chromosome struct {
 	speed      float64
-	resistance [3]float64 // idx off damageType
+	resistance [4]float64 // idx off damageType
 	health     float64
+	regen      float64
 }
 
 func scoreFitness(f FitnessMetric) float64 {
-	return f.damageReduced*FIT_RES_COEFF + f.distance*FIT_DISTANCE_COEFF + f.madeToEnd*FIT_END_COEFF + FIT_DISTANCE_AND_RES_COEFF*f.distance*f.damageReduced
+	//fmt.Println("f", f)
+	//fitness := f.damageReduced*FIT_RES_COEFF + f.distance*FIT_DISTANCE_COEFF + f.madeToEnd*FIT_END_COEFF + FIT_DISTANCE_AND_RES_COEFF*f.distance*f.damageReduced
+	//fmt.Println(fitness)
+	//10000 * fitness
+	return f.distance * FIT_DISTANCE_COEFF
 }
 
 func uniformChromosome() Chromosome {
 	c := Chromosome{
 		speed: rand.Float64(),
-		resistance: [3]float64{
+		resistance: [4]float64{
+			rand.Float64(),
 			rand.Float64(),
 			rand.Float64(),
 			rand.Float64(),
 		},
 		health: rand.Float64(),
+		regen:  rand.Float64(),
 	}
 
 	return c.norm()
 }
 
 func (c Chromosome) norm() Chromosome {
-	sum := c.speed + c.health + c.resistance[0] + c.resistance[1] + c.resistance[2]
+	sum := c.speed + c.health + c.resistance[0] + c.resistance[1] + c.resistance[2] + c.resistance[3]
 	c.speed /= sum
 	c.resistance[0] /= sum
 	c.resistance[1] /= sum
 	c.resistance[2] /= sum
+	c.resistance[3] /= sum
 	c.health /= sum
+	c.regen /= sum
 
 	return c
 }
@@ -99,12 +105,13 @@ func (c Chromosome) norm() Chromosome {
 // this is all multiplicative with points right now. mayeb you would want it to be additive idk
 
 func makeEnemy(points float64, c Chromosome) Enemy {
-	speed := 10 + points*c.speed*2 // * some coefficient
+	speed := 20 + points*c.speed*c.speed*2 // * some coefficient
 	hp := 10 + points*c.health*0.5
 
 	r0 := c.resistance[0]
 	r1 := c.resistance[1]
 	r2 := c.resistance[2]
+	r3 := c.resistance[3]
 
 	//r0 := logisticFunction(0.25 * points * c.resistance[0])
 	//r1 := logisticFunction(0.25 * points * c.resistance[1])
@@ -117,7 +124,7 @@ func makeEnemy(points float64, c Chromosome) Enemy {
 		animstage: 0,
 		animmax:   20 / speed,
 		speedBase: speed,
-		res:       [3]float64{r0, r1, r2},
+		res:       [4]float64{r0, r1, r2, r3},
 		r:         1 - (r1+r2)/2,
 		g:         1 - (r0+r2)/2,
 		b:         1 - (r0+r1)/2,
@@ -126,9 +133,11 @@ func makeEnemy(points float64, c Chromosome) Enemy {
 		alive:     true,
 		hpmax:     hp,
 		hp:        hp,
+		regen:     points * c.regen * 0.01,
 
-		chromosome: c,
-		fitness:    FitnessMetric{},
+		chromosome:      c,
+		measuredFitness: 0,
+		fitness:         FitnessMetric{},
 	}
 	return newEnemy
 }
@@ -143,24 +152,44 @@ func updateEnemies(dt float64) {
 			context.enemies[i].splatTime -= dt
 			continue
 		}
+		// health regen
+		context.enemies[i].hp += context.enemies[i].regen * dt
+		if context.enemies[i].hp > context.enemies[i].hpmax {
+			context.enemies[i].hp = context.enemies[i].hpmax
+		}
+
 		// move
-		context.enemies[i].position = vecAdd(enemy.position, vecMulScalar(enemy.velocity, dt))
+		context.enemies[i].distance += enemy.speedBase * dt
+		d := context.enemies[i].distance
+		for j := range context.path {
+			d -= float64(GRID_SZ_X)
+			if d <= float64(GRID_SZ_X) {
+				// we belong to this segment
+				context.enemies[i].position = interp(context.path[j].start, context.path[j].end, d/float64(GRID_SZ_X))
+				break
+			}
+		}
+
+		//context.enemies[i].position = vecAdd(enemy.position, vecMulScalar(enemy.velocity, dt))
 		context.enemies[i].fitness.distance += enemy.speedBase * dt
+
 		currentCell := context.grid[getTileFromPos(enemy.position)]
 		if currentCell.cellType == Orb {
 			context.lives--
-			context.enemies[i].alive = false
 			context.enemies[i].fitness.madeToEnd = 1
+			killEnemy(i)
+			context.chunks[CHUNK_LEAK].Play(-1, 0)
 		} else {
+			/*
+				selectedTile := getTileFromPos(enemy.position)
+				towardsCenter := vecSub(getTileCenter(selectedTile), enemy.position)
+				x := cross2d(rot90(enemy.velocity.unit()), towardsCenter)
 
-			selectedTile := getTileFromPos(enemy.position)
-			towardsCenter := vecSub(getTileCenter(selectedTile), enemy.position)
-			x := cross2d(rot90(enemy.velocity.unit()), towardsCenter)
-
-			// only set this near the center of the tile
-			if x > -10.0 {
-				context.enemies[i].velocity = vecMulScalar(asF64(currentCell.pathDir), enemy.speedBase)
-			}
+				// only set this near the center of the tile
+				if x > -10.0 {
+					context.enemies[i].velocity = vecMulScalar(asF64(currentCell.pathDir), enemy.speedBase)
+				}
+			*/
 		}
 
 		// update animation
@@ -172,7 +201,8 @@ func updateEnemies(dt float64) {
 }
 
 func drawEnemies() {
-	for _, enemy := range context.enemies {
+	for i := len(context.enemies) - 1; i >= 0; i-- {
+		enemy := context.enemies[i]
 		if enemy.alive {
 			context.atlas[TEX_DUDE].SetColorMod(uint8(255*enemy.r), uint8(255*enemy.g), uint8(255*enemy.b))
 			if enemy.animstage > enemy.animmax/2 {
@@ -256,10 +286,8 @@ func doTournamentSelection() Chromosome {
 		}
 	}
 
-	fA := context.parentGeneration[a].fitness
-	fB := context.parentGeneration[b].fitness
-	scoreA := scoreFitness(fA)
-	scoreB := scoreFitness(fB)
+	scoreA := fitness(a)
+	scoreB := fitness(b)
 	if scoreA > scoreB {
 		return context.parentGeneration[a].chromosome
 	} else {
@@ -286,8 +314,22 @@ func damage(towerIdx int, enemyIdx int) {
 	context.enemies[enemyIdx].hp -= damageAfterRes
 	context.enemies[enemyIdx].fitness.damageReduced += damageBlocked / context.enemies[enemyIdx].hpmax // normalize to hp max or not? i reckon so
 
+	//fmt.Printf("Attack enemy with raw damage %.0f of type %s, enemy res to that is %.2f, so damage that gets through is %.1f\n", amount, damageNames[damageType], context.enemies[enemyIdx].res[damageType], damageAfterRes)
+
 	if context.enemies[enemyIdx].hp <= 0 {
 		killEnemy(enemyIdx)
 		context.grid[towerIdx].tower.kills += 1
 	}
+}
+
+// this is actually the good way to do it
+func fitness(idx int) float64 {
+	fit := 0.0
+	if idx != 0 {
+		fit += context.parentGeneration[idx].distance - context.parentGeneration[idx-1].distance
+	}
+	if idx != len(context.parentGeneration)-1 {
+		fit += context.parentGeneration[idx].distance - context.parentGeneration[idx+1].distance
+	}
+	return fit
 }

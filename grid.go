@@ -2,6 +2,13 @@ package main
 
 import "fmt"
 
+type PathSegment struct {
+	start vec2f
+	end   vec2f
+}
+
+var TOTAL_DISTANCE = 0
+
 func makeGrid() ([]Cell, int32, int32) {
 	grid := []Cell{}
 	levelString := `
@@ -56,16 +63,16 @@ func makeGrid() ([]Cell, int32, int32) {
 
 	// It pathfinding time
 	// just do something greedy, start at one end and find the neighbour that hasnt already been found
-	currentIndex := int32(OrbIdx)
+	currentIndex := int32(PortalIdx)
 OUTER:
-	for currentIndex != PortalIdx {
+	for currentIndex != OrbIdx {
 		println("\n\nbegin loop, cidx =", currentIndex)
 		neighbours := GetNeighbours(GRIDW, GRIDH, currentIndex)
 		for _, n := range neighbours {
 			fmt.Println(grid[n])
 			x, y := idxToCoords(n)
 			fmt.Println("inspecting", x, y)
-			if grid[n].cellType == Path || grid[n].cellType == Portal {
+			if grid[n].cellType == Path || grid[n].cellType == Orb {
 				fmt.Println("found candidate")
 				if grid[n].pathDir[0] == 0 && grid[n].pathDir[1] == 0 {
 					gx := currentIndex % GRIDW
@@ -75,7 +82,11 @@ OUTER:
 					// wrong
 					grid[n].pathDir[0] = gx - nx
 					grid[n].pathDir[1] = gy - ny
+					start := getTileCenter(currentIndex)
 					currentIndex = n
+					end := getTileCenter(n)
+					context.path = append(context.path, PathSegment{start, end})
+					TOTAL_DISTANCE += (GAMEXRES / GRIDW)
 					println("found pathy neighbour at", n, "setting currentIdx to that")
 					continue OUTER
 				} else {
@@ -93,6 +104,9 @@ OUTER:
 		}
 		panic("couldnt find a path neighbour")
 	}
+
+	fmt.Println(context.path)
+	fmt.Println(len(context.path))
 
 	return grid, PortalIdx, OrbIdx
 }

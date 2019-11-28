@@ -40,6 +40,9 @@ func cross2d(a, b vec2f) float64 {
 func rot90(a vec2f) vec2f {
 	return vec2f{-a[1], a[0]}
 }
+func interp(a vec2f, b vec2f, c float64) vec2f {
+	return vec2f{a[0] + c*(b[0]-a[0]), a[1] + c*(b[1]-a[1])}
+}
 
 func (a vec2f) norm() float64 {
 	return math.Sqrt(a[0]*a[0] + a[1]*a[1])

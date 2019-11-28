@@ -12,6 +12,9 @@ const (
 	TOWER_LASER
 	TOWER_FIRE
 	TOWER_LIGHTNING
+	TOWER_ARROW
+	TOWER_BLACKSMITH
+	TOWER_TREBUCHET
 	NUM_TOWERS
 )
 
@@ -21,12 +24,14 @@ const (
 	DAMAGE_FIRE DamageType = iota
 	DAMAGE_CHEMICAL
 	DAMAGE_LIGHTNING
+	DAMAGE_PHYSICAL
 )
 
 var damageNames = [...]string{
 	"fire",
 	"chemical",
 	"lightning",
+	"physical",
 }
 
 type TowerProperties struct {
@@ -99,6 +104,45 @@ func initTowerProps() {
 			8,
 			DAMAGE_LIGHTNING,
 			6,
+		},
+		TowerProperties{
+			"Arrow Tower",
+			1,
+			context.atlas[TEX_TOWER_ARROW],
+			ATTACK_PROJECTILE,
+			250,
+			context.atlas[TEX_PROJECTILE_ARROW],
+			CHUNK_LIGHTNING,
+			CHUNK_LIGHTNING,
+			8,
+			DAMAGE_PHYSICAL,
+			6,
+		},
+		TowerProperties{
+			"Blacksmith",
+			1.5,
+			context.atlas[TEX_TOWER_BLACKSMITH],
+			ATTACK_PROJECTILE,
+			250,
+			context.atlas[TEX_PROJECTILE_HAMMER],
+			CHUNK_LIGHTNING,
+			CHUNK_LIGHTNING,
+			10,
+			DAMAGE_PHYSICAL,
+			12,
+		},
+		TowerProperties{
+			"Trebuchet",
+			3,
+			context.atlas[TEX_TOWER_TREBUCHET],
+			ATTACK_PROJECTILE,
+			500,
+			context.atlas[TEX_PROJECTILE_ROCK],
+			CHUNK_FIRE_LAUNCH,
+			CHUNK_FIRE_EXPLODE,
+			12,
+			DAMAGE_PHYSICAL,
+			14,
 		},
 		TowerProperties{},
 	}

@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"os"
+	"sort"
 	"time"
 
 	"github.com/veandco/go-sdl2/img"
@@ -11,11 +13,13 @@ import (
 )
 
 const (
-	GAMEXRES = 900
-	GAMEYRES = 900
-	UIH      = 200
-	GRIDW    = 15
-	GRIDH    = 15
+	GAMEXRES  = 900
+	GAMEYRES  = 900
+	UIH       = 200
+	GRIDW     = 15
+	GRIDH     = 15
+	GRID_SZ_X = GAMEXRES / GRIDW
+	GRID_SZ_Y = GAMEYRES / GRIDH
 )
 
 const (
@@ -24,8 +28,16 @@ const (
 )
 
 const (
-	DESIRED_ENEMIES         = 20
-	ENEMY_STRENGTH_PER_WAVE = 40
+	DESIRED_ENEMIES         = 10
+	ENEMY_STRENGTH_PER_WAVE = 20
+)
+
+const (
+	FIT_DISTANCE_COEFF         = 1.0 / (60.0 * 50.0)
+	FIT_RES_COEFF              = 0
+	FIT_END_COEFF              = 0
+	FIT_DISTANCE_AND_RES_COEFF = 0 / (60.0 * 50.0)
+	SELECTIVE_PRESSURE         = 0.5
 )
 
 const (
@@ -51,6 +63,7 @@ type Context struct {
 	grid              []Cell
 	gridw, gridh      int32
 	cellw, cellh      int32
+	path              []PathSegment
 
 	parentGeneration []Enemy
 	enemies          []Enemy
@@ -108,6 +121,8 @@ func main() {
 		sdl.K_e,
 		sdl.K_r,
 		sdl.K_t,
+		sdl.K_y,
+		sdl.K_u,
 	}
 	rand.Seed(time.Now().UnixNano())
 	context.xres = GAMEXRES
@@ -119,7 +134,7 @@ func main() {
 	context.lives = 20
 	context.selectedEnemy = -1
 	context.selectedTower = -1
-	context.enemyStrength = 60
+	context.enemyStrength = 100
 	context.waveNumber = 0
 	context.state = 0
 
@@ -202,8 +217,41 @@ func main() {
 
 			if !anyLivingEnemies && len(context.enemies) == DESIRED_ENEMIES {
 				// initiate transition to next wave
+				fmt.Println("wave end")
+				// parent gen, enemies confused?
+
 				context.selectedEnemy = -1
 				context.parentGeneration = context.enemies
+
+				f, err := os.OpenFile("fit.log", os.O_CREATE|os.O_APPEND|os.O_RDONLY, 0600)
+				if err != nil {
+					fmt.Println("error writing fit log")
+				}
+				for i := range context.parentGeneration {
+					context.parentGeneration[i].measuredFitness = fitness(i)
+				}
+
+				fmt.Fprintf(f, "Wave %d pre sort:\t\t\t", context.waveNumber+1)
+				for i := range context.parentGeneration {
+					fmt.Fprintf(f, " %f ", fitness(i))
+				}
+				fmt.Fprintf(f, "\n")
+
+				sort.Slice(context.parentGeneration, func(a, b int) bool {
+					return context.parentGeneration[a].measuredFitness > context.parentGeneration[b].measuredFitness
+				})
+
+				fmt.Fprintf(f, "Wave %d post sort pre cull:\t", context.waveNumber+1)
+				for i := range context.parentGeneration {
+					fmt.Fprintf(f, " %f ", context.parentGeneration[i].measuredFitness)
+				}
+				fmt.Fprintf(f, "\n")
+				context.parentGeneration = context.parentGeneration[:int(float64(len(context.parentGeneration))*SELECTIVE_PRESSURE)]
+				fmt.Fprintf(f, "Wave %d post cull:\t\t\t", context.waveNumber+1)
+				for i := range context.parentGeneration {
+					fmt.Fprintf(f, " %f ", context.parentGeneration[i].measuredFitness)
+				}
+				fmt.Fprintf(f, "\n")
 				context.enemies = []Enemy{}
 				context.state = BETWEEN_WAVE
 				context.stateChangeTimeAcc = 0
@@ -226,7 +274,7 @@ func main() {
 						gy := t.Y / context.cellh
 						clickedCellIdx := gy*context.gridw + gx
 
-						if context.placingTower != None && context.grid[clickedCellIdx].cellType == Buildable {
+						if context.placingTower != None && context.grid[clickedCellIdx].cellType == Buildable && context.grid[clickedCellIdx].tower.towerType == None {
 							context.selectedTower = -1
 							if towerProperties[context.placingTower].cost <= context.money {
 								context.money -= towerProperties[context.placingTower].cost
@@ -238,6 +286,7 @@ func main() {
 							}
 						} else if context.grid[clickedCellIdx].tower.towerType != None {
 							context.selectedTower = clickedCellIdx
+							context.selectedEnemy = -1
 						} else {
 							context.selectedTower = -1
 							// see if we clicked an enemy
@@ -247,7 +296,6 @@ func main() {
 								}
 								r := context.enemies[i].rect()
 								if clickpt.InRect(r) {
-									fmt.Println("you clicked enemy", context.enemies[i])
 									context.selectedEnemy = i
 									context.selectedTower = -1
 									continue OUTER
@@ -274,6 +322,7 @@ func main() {
 					for i, k := range keymap {
 						if t.Keysym.Sym == k {
 							context.selectedTower = -1
+							context.selectedEnemy = -1
 							if context.placingTower == TowerType(i) {
 								context.placingTower = None
 							} else {
@@ -405,6 +454,9 @@ func main() {
 			drawTowerBtn("w", TOWER_LASER, 1, 0)
 			drawTowerBtn("e", TOWER_FIRE, 2, 0)
 			drawTowerBtn("r", TOWER_LIGHTNING, 3, 0)
+			drawTowerBtn("t", TOWER_ARROW, 4, 0)
+			drawTowerBtn("y", TOWER_BLACKSMITH, 5, 0)
+			drawTowerBtn("u", TOWER_TREBUCHET, 6, 0)
 		}
 
 		// draw some text
@@ -462,6 +514,8 @@ func teardownSDL() {
 	for i := 0; i < int(NUM_TEXTURES); i++ {
 		context.atlas[i].Destroy()
 	}
+	// could clean up chunks but idk how
+
 	context.window.Destroy()
 	context.renderer.Destroy()
 	img.Quit()
