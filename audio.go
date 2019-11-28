@@ -9,6 +9,8 @@ type ChunkID int
 const (
 	CHUNK_LASER = iota
 	CHUNK_FIRE_LAUNCH
+	CHUNK_ARROW_LAUNCH
+	CHUNK_ARROW_HIT
 	CHUNK_FIRE_EXPLODE
 	CHUNK_LIGHTNING
 	CHUNK_DIE
@@ -20,6 +22,8 @@ const (
 var chunkNames = [...]string{
 	"laserAttack",
 	"fireAttack",
+	"arrowLaunch",
+	"arrowHit",
 	"woosh",
 	"zzt",
 	"pop",
@@ -37,6 +41,8 @@ func loadChunks() {
 	context.chunks[CHUNK_DIE].Volume(50)
 	context.chunks[CHUNK_LIGHTNING].Volume(25)
 	context.chunks[CHUNK_WAVE].Volume(90)
+	context.chunks[CHUNK_ARROW_LAUNCH].Volume(25)
+	context.chunks[CHUNK_ARROW_HIT].Volume(30)
 }
 
 func loadWav(path string) *mix.Chunk {

@@ -41,6 +41,7 @@ type ProjectileProperties struct {
 	flipInterval  float64
 	rotationSpeed float64
 
+	deathTime         float64
 	deathTexture      TextureID
 	deathScale        float64
 	deathSound        ChunkID
@@ -121,7 +122,7 @@ func makeProjectile(start, end vec2f, attack Attack, fromTower int, toEnemyUID i
 
 	// After explodey projectile
 	context.tweens = append(context.tweens, Tween{
-		context.simTime + tt, context.simTime + tt + 0.4, func(t float64) {
+		context.simTime + tt, context.simTime + tt + attack.pp.deathTime, func(t float64) {
 			flip := sdl.FLIP_NONE
 			if math.Mod(t, 2*attack.pp.deathFlipInterval) > attack.pp.flipInterval {
 				flip = sdl.FLIP_VERTICAL
