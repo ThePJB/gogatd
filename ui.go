@@ -141,13 +141,13 @@ func waveAnnounce(n int, t float64) {
 				y = int32(0.5 + tn*100)
 			}
 			if t > 0.6 {
-				tn := (t - 0.6) / 0.6
+				tn := (t - 0.6) / 0.4
 				tn = slowStart4(tn)
 				y = int32(0.5 + (1-tn)*100)
 			}
 			var alpha uint8 = 255
 			if t > 0.8 {
-				tn := (t - 0.8) / 0.8
+				tn := (t - 0.8) / 0.2
 				alpha = uint8(0.5 + 255.0*(1-tn))
 				//fmt.Println(t, tn, alpha)
 			}
