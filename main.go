@@ -73,6 +73,7 @@ type Context struct {
 	tweens  []Tween
 	events  []Event
 	paused  bool
+	lost    bool
 
 	waveNumber         int
 	enemyStrength      float64
@@ -234,7 +235,7 @@ func main() {
 				HoverTile = TileY*context.gridw + TileX
 			}
 		}
-		if !context.paused {
+		if !context.paused && !context.lost {
 			context.simTime += dt
 
 			for i := range context.events {
@@ -401,8 +402,16 @@ func main() {
 			drawTowerBtn("y", TOWER_BLACKSMITH, 5, 0)
 			drawTowerBtn("u", TOWER_TREBUCHET, 6, 0)
 		}
-
-		if context.paused {
+		if context.lost {
+			context.renderer.SetDrawColor(200, 100, 100, 80)
+			context.renderer.FillRect(&sdl.Rect{0, 0, GAMEXRES, GAMEYRES})
+			w := int32(7)
+			scale := int32(8)
+			s := "you lost"
+			est_w := int32(len(s)) * w * scale
+			y := int32(500)
+			drawText(GAMEXRES/2-est_w/2, y, s, scale)
+		} else if context.paused {
 			context.renderer.SetDrawColor(200, 200, 150, 80)
 			context.renderer.FillRect(&sdl.Rect{0, 0, GAMEXRES, GAMEYRES})
 			w := int32(7)

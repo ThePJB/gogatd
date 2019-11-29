@@ -151,6 +151,9 @@ func updateEnemies(dt float64) {
 			context.lives--
 			killEnemy(i)
 			context.chunks[CHUNK_LEAK].Play(-1, 0)
+			if context.lives == 0 {
+				context.lost = true
+			}
 		}
 
 		// update animation
