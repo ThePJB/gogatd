@@ -93,7 +93,7 @@ func (c Chromosome) norm() Chromosome {
 // this is all multiplicative with points right now. mayeb you would want it to be additive idk
 
 func makeEnemy(points float64, c Chromosome) Enemy {
-	speed := 20 + points*c.speed*c.speed*2 // * some coefficient
+	speed := 4 * math.Sqrt(points*c.speed) // * some coefficient
 	hp := 10 + points*c.health*0.5
 
 	r0 := slowStop2(c.resistance[0]) * 1
