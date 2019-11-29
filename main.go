@@ -28,8 +28,8 @@ const (
 )
 
 const (
-	DESIRED_ENEMIES         = 10
-	ENEMY_STRENGTH_PER_WAVE = 20
+	DESIRED_ENEMIES         = 15
+	ENEMY_STRENGTH_PER_WAVE = 40
 )
 
 const (

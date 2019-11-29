@@ -54,7 +54,7 @@ func initTowerProps() {
 			name:    "Laser Tower",
 			tooltip: "Rapid fire fire tower",
 			texture: TEX_TOWER_LASER,
-			cost:    5,
+			cost:    8,
 			attack: Attack{
 				attackType:  ATTACK_BEAM,
 				attackSound: CHUNK_LASER,
@@ -74,7 +74,7 @@ func initTowerProps() {
 			name:    "Fire Tower",
 			tooltip: "Nasty AoE damage fire tower",
 			texture: TEX_TOWER_FIRE,
-			cost:    10,
+			cost:    13,
 			attack: Attack{
 				attackType:  ATTACK_PROJECTILE,
 				attackSound: CHUNK_FIRE_LAUNCH,
@@ -103,7 +103,7 @@ func initTowerProps() {
 			name:    "Lightning Tower",
 			tooltip: "Long range beam tower",
 			texture: TEX_TOWER_LIGHTNING,
-			cost:    6,
+			cost:    14,
 			attack: Attack{
 				attackType:  ATTACK_BEAM,
 				attackSound: CHUNK_LIGHTNING,
@@ -123,7 +123,7 @@ func initTowerProps() {
 			name:    "Arrow Tower",
 			tooltip: "Medium range projectile tower",
 			texture: TEX_TOWER_ARROW,
-			cost:    6,
+			cost:    9,
 			attack: Attack{
 				attackType:  ATTACK_PROJECTILE,
 				attackSound: CHUNK_ARROW_LAUNCH,
@@ -150,7 +150,7 @@ func initTowerProps() {
 		},
 		TowerProperties{
 			name:    "Blacksmith",
-			tooltip: "Buffs 4-adjacent physical towers",
+			tooltip: "Buffs 4-adjacent physical towers (not implemented yet tho lol)",
 			texture: TEX_TOWER_BLACKSMITH,
 			cost:    20,
 			attack: Attack{
