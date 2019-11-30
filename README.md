@@ -1,10 +1,12 @@
 # gogatd
 
-Its a tower defence game written in Go
+Its a tower defence game written in Go. The enemies evolving by a genetic algorithm is (meant to be) a central mechanic. This was for a November game jam with friends. If I linked you this or you are a random person from the internet, lets do another one sometime soon.
 
+Building will require Go env, probably a C env with sdl2, sdl2-image, sdl2-mix installed.
+
+To build run ```go build```
 
 ![screenshot](screenshot.png)
-
 
 ### Issues
 * Might be leaking or fragmenting VRAM, or otherwise messing with GPU state? Not really sure but games crash a lot if I've been working on this.
