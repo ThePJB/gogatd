@@ -299,10 +299,10 @@ func fitness(idx int) float64 {
 
 func pathPos(d float64) vec2f {
 	for j := range context.path {
-		d -= float64(GRID_SZ_X)
-		if d <= float64(GRID_SZ_X) {
+		d -= float64(context.CellWidth())
+		if d <= float64(context.CellWidth()) {
 			// we belong to this segment
-			return interp(context.path[j].start, context.path[j].end, d/float64(GRID_SZ_X))
+			return interp(context.path[j].start, context.path[j].end, d/float64(context.CellWidth()))
 		}
 	}
 	fmt.Println("bad pathpos, might have gone off the end")

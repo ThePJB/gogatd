@@ -99,7 +99,7 @@ OUTER:
 					currentIndex = n
 					end := getTileCenter(n)
 					context.path = append(context.path, PathSegment{start, end})
-					TOTAL_DISTANCE += (GAMEXRES / GRIDW)
+					TOTAL_DISTANCE += int(context.GameXRes() / int32(GRIDW)) // nonsquare grid will make this cooked. be good to use a different distance metric here
 					println("found pathy neighbour at", n, "setting currentIdx to that")
 					continue OUTER
 				} else {

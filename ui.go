@@ -10,15 +10,15 @@ func drawSelectedEnemy() {
 	var pad int32 = 10
 	var textSize int32 = 14
 	var selSize int32 = 200
-	selRect := &sdl.Rect{pad, GAMEYRES + pad, selSize, selSize}
+	selRect := &sdl.Rect{pad, context.GameYRes() + pad, selSize, selSize}
 	drawEnemyToRect(context.selectedEnemy, selRect)
 	e := context.enemies[context.selectedEnemy]
-	drawText(pad+selSize+pad, GAMEYRES+pad, fmt.Sprintf("%.0f/%.0f HP + %.2f HP/S", e.hp, e.hpmax, e.regen), 2)
-	drawText(pad+selSize+pad, GAMEYRES+pad+1*textSize+1*pad, fmt.Sprintf("%.0f%% Fire Resist", 100*e.res[DAMAGE_FIRE]), 2)
-	drawText(pad+selSize+pad, GAMEYRES+pad+2*textSize+2*pad, fmt.Sprintf("%.0f%% Chem Resist", 100*e.res[DAMAGE_CHEMICAL]), 2)
-	drawText(pad+selSize+pad, GAMEYRES+pad+3*textSize+3*pad, fmt.Sprintf("%.0f%% Lightning Resist", 100*e.res[DAMAGE_LIGHTNING]), 2)
-	drawText(pad+selSize+pad, GAMEYRES+pad+4*textSize+4*pad, fmt.Sprintf("%.0f%% Physical Resist", 100*e.res[DAMAGE_PHYSICAL]), 2)
-	drawText(pad+selSize+pad, GAMEYRES+pad+5*textSize+5*pad, fmt.Sprintf("%.0f px/s Speed", e.speedBase), 2)
+	drawText(pad+selSize+pad, context.GameYRes()+pad, fmt.Sprintf("%.0f/%.0f HP + %.2f HP/S", e.hp, e.hpmax, e.regen), 2)
+	drawText(pad+selSize+pad, context.GameYRes()+pad+1*textSize+1*pad, fmt.Sprintf("%.0f%% Fire Resist", 100*e.res[DAMAGE_FIRE]), 2)
+	drawText(pad+selSize+pad, context.GameYRes()+pad+2*textSize+2*pad, fmt.Sprintf("%.0f%% Chem Resist", 100*e.res[DAMAGE_CHEMICAL]), 2)
+	drawText(pad+selSize+pad, context.GameYRes()+pad+3*textSize+3*pad, fmt.Sprintf("%.0f%% Lightning Resist", 100*e.res[DAMAGE_LIGHTNING]), 2)
+	drawText(pad+selSize+pad, context.GameYRes()+pad+4*textSize+4*pad, fmt.Sprintf("%.0f%% Physical Resist", 100*e.res[DAMAGE_PHYSICAL]), 2)
+	drawText(pad+selSize+pad, context.GameYRes()+pad+5*textSize+5*pad, fmt.Sprintf("%.0f px/s Speed", e.speedBase), 2)
 }
 
 func drawSelectedTower() {
@@ -26,9 +26,9 @@ func drawSelectedTower() {
 	pad := int32(10)
 	var textSize int32 = 14
 	var selSize int32 = 200
-	selRect := &sdl.Rect{pad, GAMEYRES + pad, selSize, selSize}
+	selRect := &sdl.Rect{pad, context.GameYRes() + pad, selSize, selSize}
 	cursorX := pad + selSize + pad
-	cursorY := GAMEYRES + pad
+	cursorY := context.GameYRes() + pad
 
 	props := towerProperties[t.towerType]
 
@@ -51,9 +51,9 @@ func drawTowerInfo(t TowerType) {
 	pad := int32(10)
 	var textSize int32 = 14
 	var selSize int32 = 200
-	selRect := &sdl.Rect{pad, GAMEYRES + pad, selSize, selSize}
+	selRect := &sdl.Rect{pad, context.GameYRes() + pad, selSize, selSize}
 	cursorX := pad + selSize + pad
-	cursorY := GAMEYRES + pad
+	cursorY := context.GameYRes() + pad
 
 	props := towerProperties[t]
 
@@ -105,7 +105,7 @@ const TOWERBTN_PAD = int32(10)
 // btn frame, if pressed rotate even
 func drawTowerBtn(hotkey string, t TowerType, x, y int32) {
 	px := TOWERBTN_PAD + x*(TOWERBTN_S+TOWERBTN_PAD)
-	py := TOWERBTN_PAD + y*(TOWERBTN_S+TOWERBTN_PAD) + GAMEYRES
+	py := TOWERBTN_PAD + y*(TOWERBTN_S+TOWERBTN_PAD) + context.GameYRes()
 
 	dstrect := &sdl.Rect{px, py, TOWERBTN_S, TOWERBTN_S}
 
@@ -156,7 +156,7 @@ func waveAnnounce(n int, t float64) {
 			scale := int32(8)
 			s := fmt.Sprintf("Wave %d", n)
 			est_w := int32(len(s)) * w * scale
-			drawText(GAMEXRES/2-est_w/2, y, s, scale)
+			drawText(context.GameXRes()/2-est_w/2, y, s, scale)
 			context.atlas[TEX_FONT].SetAlphaMod(255)
 		},
 	})

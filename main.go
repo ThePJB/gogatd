@@ -1,9 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math/rand"
 	"os"
+	"runtime"
 	"sort"
 	"time"
 
@@ -13,13 +15,9 @@ import (
 )
 
 const (
-	GAMEXRES  = 900
-	GAMEYRES  = 900
-	UIH       = 200
-	GRIDW     = 15
-	GRIDH     = 15
-	GRID_SZ_X = GAMEXRES / GRIDW
-	GRID_SZ_Y = GAMEYRES / GRIDH
+	UIH   = 200
+	GRIDW = 15
+	GRIDH = 15
 )
 
 const (
@@ -84,11 +82,32 @@ type Context struct {
 	money        int
 }
 
+func (c Context) CellWidth() int32 {
+	return c.GameXRes() / GRIDW
+}
+
+func (c Context) CellHeight() int32 {
+	return c.GameYRes() / GRIDH
+}
+func (c Context) GameXRes() int32 {
+	return c.xres
+}
+
+func (c Context) GameYRes() int32 {
+	return c.yres - UIH
+}
+
 var context Context = Context{}
 
 var keymap []sdl.Keycode
 
 func main() {
+	runtime.LockOSThread()
+
+	xres := flag.Int("xres", 600, "x resolution of game window")
+	yres := flag.Int("yres", 800, "y resolution of game window")
+	flag.Parse()
+
 	keymap = []sdl.Keycode{
 		sdl.K_ESCAPE,
 		sdl.K_q,
@@ -100,12 +119,13 @@ func main() {
 		sdl.K_u,
 	}
 	rand.Seed(time.Now().UnixNano())
-	context.xres = GAMEXRES
-	context.yres = GAMEYRES
+
+	context.xres = int32(*xres)
+	context.yres = int32(*yres)
 	context.gridw = GRIDW
 	context.gridh = GRIDH
-	context.cellw = GAMEXRES / GRIDW
-	context.cellh = GAMEYRES / GRIDH
+	context.cellw = context.CellWidth()
+	context.cellh = context.CellHeight()
 	context.lives = 20
 	context.selectedEnemy = -1
 	context.selectedTower = -1
@@ -161,7 +181,7 @@ func main() {
 				break
 			case *sdl.MouseButtonEvent:
 				if t.Button == sdl.BUTTON_LEFT && t.State == 1 {
-					if t.Y < GAMEYRES {
+					if t.Y < context.GameYRes() {
 						clickpt := sdl.Point{t.X, t.Y}
 						gx := t.X / context.cellw
 						gy := t.Y / context.cellh
@@ -337,7 +357,7 @@ func main() {
 		// render loop
 		context.renderer.Clear()
 		context.renderer.SetDrawColor(0, 0, 0, 255)
-		context.renderer.FillRect(&sdl.Rect{0, 0, GAMEXRES, GAMEYRES})
+		context.renderer.FillRect(&sdl.Rect{0, 0, context.GameXRes(), context.GameYRes()})
 		// draw grid
 		for i, cell := range context.grid {
 			toRect := &sdl.Rect{
@@ -355,7 +375,7 @@ func main() {
 
 		// draw selected ui
 		//background
-		context.renderer.CopyEx(context.atlas[TEX_PATH], nil, &sdl.Rect{0, GAMEYRES, GAMEXRES, UIH}, 0, nil, sdl.FLIP_NONE)
+		context.renderer.CopyEx(context.atlas[TEX_PATH], nil, &sdl.Rect{0, context.GameYRes(), context.GameXRes(), UIH}, 0, nil, sdl.FLIP_NONE)
 
 		// a stateful cursor thing would actually probably be quite good
 		if context.selectedEnemy != -1 {
@@ -378,13 +398,13 @@ func main() {
 			drawTowerInfo(context.placingTower)
 			var i int32
 			for i = 0; i < GRIDW; i++ {
-				context.renderer.FillRect(&sdl.Rect{-1 + i*GAMEXRES/GRIDW, 0, 2, GAMEYRES})
+				context.renderer.FillRect(&sdl.Rect{-1 + i*context.CellWidth(), 0, 2, context.GameYRes()})
 			}
 			for i = 0; i < GRIDH; i++ {
-				context.renderer.FillRect(&sdl.Rect{0, -1 + i*GAMEYRES/GRIDH, GAMEXRES, 2})
+				context.renderer.FillRect(&sdl.Rect{0, -1 + i*context.CellHeight(), context.GameXRes(), 2})
 			}
 			// draw ghost tower
-			if CursorY < GAMEYRES && CursorX < GAMEXRES {
+			if CursorY < context.GameYRes() && CursorX < context.GameXRes() {
 				t := context.atlas[towerProperties[context.placingTower].texture]
 				t.SetAlphaMod(128)
 				context.renderer.CopyEx(t, nil, getTileRect(HoverTile), 0.0, nil, sdl.FLIP_NONE)
@@ -404,22 +424,22 @@ func main() {
 		}
 		if context.lost {
 			context.renderer.SetDrawColor(200, 100, 100, 80)
-			context.renderer.FillRect(&sdl.Rect{0, 0, GAMEXRES, GAMEYRES})
+			context.renderer.FillRect(&sdl.Rect{0, 0, context.GameXRes(), context.GameYRes()})
 			w := int32(7)
 			scale := int32(8)
 			s := "you lost"
 			est_w := int32(len(s)) * w * scale
 			y := int32(500)
-			drawText(GAMEXRES/2-est_w/2, y, s, scale)
+			drawText(context.GameXRes()/2-est_w/2, y, s, scale)
 		} else if context.paused {
 			context.renderer.SetDrawColor(200, 200, 150, 80)
-			context.renderer.FillRect(&sdl.Rect{0, 0, GAMEXRES, GAMEYRES})
+			context.renderer.FillRect(&sdl.Rect{0, 0, context.GameXRes(), context.GameYRes()})
 			w := int32(7)
 			scale := int32(8)
 			s := "paused"
 			est_w := int32(len(s)) * w * scale
 			y := int32(500)
-			drawText(GAMEXRES/2-est_w/2, y, s, scale)
+			drawText(context.GameXRes()/2-est_w/2, y, s, scale)
 			drawText(70, y+w*scale+20, "space to pause/unpause", 2)
 			drawText(70, y+w*scale+w*2+20+10, "] to fast forward", 2)
 		}
@@ -453,7 +473,7 @@ func initSDL() {
 		panic(err)
 	}
 	window, err := sdl.CreateWindow("GOGATD v0.1", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
-		GAMEXRES, GAMEYRES+UIH, sdl.WINDOW_SHOWN)
+		context.xres, context.yres, sdl.WINDOW_SHOWN)
 	if err != nil {
 		panic(err)
 	}
